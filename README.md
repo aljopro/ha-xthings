@@ -1,7 +1,7 @@
 # Xthings (U-tec) Integration for Home Assistant
 
-[![HACS Validation](https://github.com/jensen/ha-xthings/actions/workflows/validate.yml/badge.svg)](https://github.com/jensen/ha-xthings/actions/workflows/validate.yml)
-[![Hassfest](https://github.com/jensen/ha-xthings/actions/workflows/hassfest.yml/badge.svg)](https://github.com/jensen/ha-xthings/actions/workflows/hassfest.yml)
+[![HACS Validation](https://github.com/aljopro/ha-xthings/actions/workflows/validate.yml/badge.svg)](https://github.com/aljopro/ha-xthings/actions/workflows/validate.yml)
+[![Hassfest](https://github.com/aljopro/ha-xthings/actions/workflows/hassfest.yml/badge.svg)](https://github.com/aljopro/ha-xthings/actions/workflows/hassfest.yml)
 
 A custom Home Assistant integration for **U-tec ULTRALOQ** WiFi smart locks via the [Xthings OpenAPI](https://developer.xthings.com/hc/en-us/sections/39589678120985-Developer-Documentation).
 
@@ -34,7 +34,7 @@ A custom Home Assistant integration for **U-tec ULTRALOQ** WiFi smart locks via 
 
 1. Open HACS in Home Assistant
 2. Click the **⋮** menu → **Custom repositories**
-3. Add `https://github.com/jensen/ha-xthings` with category **Integration**
+3. Add `https://github.com/aljopro/ha-xthings` with category **Integration**
 4. Click **Download** on the Xthings (U-tec) card
 5. Restart Home Assistant
 
@@ -102,7 +102,7 @@ For each discovered lock, the integration creates:
 
 ```bash
 # Clone the repository
-git clone https://github.com/jensen/ha-xthings.git
+git clone https://github.com/aljopro/ha-xthings.git
 
 # The integration code is in custom_components/xthings/
 ```
