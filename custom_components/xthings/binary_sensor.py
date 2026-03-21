@@ -1,16 +1,14 @@
-"""Sensor platform for the Xthings (U-tec) integration."""
+"""Binary sensor platform for the Xthings (U-tec) integration."""
 
 from __future__ import annotations
 
 import logging
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -28,45 +26,41 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Xthings sensor entities from a config entry."""
+    """Set up Xthings binary sensor entities from a config entry."""
     coordinator: XthingsDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    entities: list[SensorEntity] = []
+    entities: list[XthingsConnectivitySensor] = []
     for device_id, device_info in coordinator.data.devices.items():
         if device_info.is_lock:
             entities.append(
-                XthingsBatterySensor(coordinator, device_info)
+                XthingsConnectivitySensor(coordinator, device_info)
             )
 
     async_add_entities(entities)
 
 
-class XthingsBatterySensor(
-    CoordinatorEntity[XthingsDataUpdateCoordinator], SensorEntity
+class XthingsConnectivitySensor(
+    CoordinatorEntity[XthingsDataUpdateCoordinator], BinarySensorEntity
 ):
-    """Battery level sensor for a U-tec lock."""
+    """Connectivity sensor for a U-tec lock."""
 
     _attr_has_entity_name = True
-    _attr_name = "Battery"
-    _attr_device_class = SensorDeviceClass.BATTERY
-    _attr_native_unit_of_measurement = PERCENTAGE
-    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_name = "Connectivity"
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
     def __init__(
         self,
         coordinator: XthingsDataUpdateCoordinator,
         device_info: XthingsDeviceInfo,
     ) -> None:
-        """Initialize the battery sensor."""
+        """Initialize the connectivity sensor."""
         super().__init__(coordinator, context=device_info.device_id)
 
         self._device_id = device_info.device_id
         self._device_info = device_info
 
-        # Entity attributes
-        self._attr_unique_id = f"{device_info.device_id}_battery"
+        self._attr_unique_id = f"{device_info.device_id}_connectivity"
 
-        # Share device registry with the lock entity
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, device_info.device_id)},
             name=device_info.name,
@@ -90,12 +84,12 @@ class XthingsBatterySensor(
         return self._device_state is not None
 
     @property
-    def native_value(self) -> int | None:
-        """Return the battery level percentage."""
+    def is_on(self) -> bool | None:
+        """Return True if the device is online."""
         state = self._device_state
         if state is None:
             return None
-        return state.battery_level
+        return state.online
 
     @callback
     def _handle_coordinator_update(self) -> None:

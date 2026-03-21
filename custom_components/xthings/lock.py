@@ -77,11 +77,10 @@ class XthingsLockEntity(
 
     @property
     def available(self) -> bool:
-        """Return True if the device is online."""
+        """Return True if we have state data from the coordinator."""
         if not super().available:
             return False
-        state = self._device_state
-        return state is not None and state.online
+        return self._device_state is not None
 
     @property
     def is_locked(self) -> bool | None:

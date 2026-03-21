@@ -33,6 +33,7 @@ CAP_LOCK_STATE = "st.Lock"  # Note: capital L in query responses
 CAP_BATTERY_LEVEL = "st.BatteryLevel"
 CAP_LOCK_USER = "st.lockUser"
 CAP_DEFERRED_RESPONSE = "st.deferredResponse"
+CAP_DOOR_SENSOR = "st.DoorSensor"
 
 # Device categories
 CATEGORY_LOCK = "LOCK"

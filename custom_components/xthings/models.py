@@ -39,8 +39,10 @@ class XthingsDeviceState:
     """Current state of a device."""
 
     online: bool = False
-    lock_state: str | None = None  # "locked" / "unlocked"
+    lock_state: str | None = None  # "locked" / "unlocked" / "jammed" / "unknown"
     battery_level: int | None = None
+    is_jammed: bool = False
+    door_state: str | None = None  # "closed" / "open" / "unknown" (utec-lock-sensor)
 
 
 @dataclass

@@ -28,6 +28,16 @@ from .models import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Xthings battery level is integer 1-5, map to approximate percentage
+BATTERY_LEVEL_MAP = {1: 10, 2: 30, 3: 50, 4: 75, 5: 100}
+
+
+def _battery_level_to_percent(level: int | None) -> int | None:
+    """Convert xthings battery level (1-5) to a percentage."""
+    if level is None:
+        return None
+    return BATTERY_LEVEL_MAP.get(level, max(0, min(100, level * 20)))
+
 
 class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]):
     """Coordinator to manage fetching xthings device data."""
@@ -127,17 +137,22 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
                 continue
 
             state = XthingsDeviceState()
+            _LOGGER.debug(
+                "Raw states for %s (%s): %s",
+                device_info.name, device_id, device_states,
+            )
             for s in device_states:
-                capability = s.get("capability", "")
+                capability = s.get("capability", "").lower()
                 name = s.get("name", "")
                 value = s.get("value")
 
-                if capability == CAP_HEALTH_CHECK and name == "status":
-                    state.online = value == "online"
-                elif capability == CAP_LOCK_STATE and name == "lockState":
-                    state.lock_state = value
-                elif capability == CAP_BATTERY_LEVEL and name == "level":
-                    state.battery_level = value
+                if capability == "st.healthcheck" and name == "status":
+                    state.online = str(value).lower() == "online"
+                elif capability == "st.lock" and name == "lockState":
+                    state.lock_state = str(value).lower()
+                elif capability == "st.batterylevel" and name == "level":
+                    # API returns 1-5 scale, map to percentage
+                    state.battery_level = _battery_level_to_percent(value)
 
             states[device_id] = state
 
