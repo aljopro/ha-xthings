@@ -5,6 +5,8 @@ homeassistant:
   name: Xthings Dev
   unit_system: imperial
   time_zone: America/Chicago
+  internal_url: "http://localhost:8123"
+  external_url: "http://localhost:8123"
 
 # Enable debug logging for our integration
 logger:

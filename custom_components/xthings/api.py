@@ -8,6 +8,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_entry_oauth2_flow
+from homeassistant.helpers.config_entry_oauth2_flow import _encode_jwt
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.network import get_url
 
@@ -64,8 +65,13 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
         """Generate the authorize URL.
 
         Xthings requires client_secret in the authorize URL query params.
+        The state parameter must be a JWT so HA's OAuth callback view can
+        decode it and resume the correct config flow.
         """
         redirect_uri = self.redirect_uri
+        state = _encode_jwt(
+            self.hass, {"flow_id": flow_id, "redirect_uri": redirect_uri}
+        )
         return (
             f"{OAUTH2_AUTHORIZE_URL}"
             f"?response_type=code"
@@ -73,7 +79,7 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
             f"&client_secret={self._client_secret}"
             f"&scope=openapi"
             f"&redirect_uri={redirect_uri}"
-            f"&state={flow_id}"
+            f"&state={state}"
         )
 
     @property
