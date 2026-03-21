@@ -208,6 +208,166 @@ COMMAND_RESPONSE_DEFERRED = {
     },
 }
 
+QUERY_RESPONSE_JAMMED = {
+    "header": {
+        "namespace": "Uhome.Device",
+        "name": "Query",
+        "messageId": "test-msg-id",
+        "payloadVersion": "1",
+    },
+    "payload": {
+        "devices": [
+            {
+                "id": "AA:BB:CC:DD:EE:01",
+                "states": [
+                    {
+                        "capability": "st.healthCheck",
+                        "name": "status",
+                        "value": "online",
+                    },
+                    {
+                        "capability": "st.Lock",
+                        "name": "lockState",
+                        "value": "jammed",
+                    },
+                    {
+                        "capability": "st.BatteryLevel",
+                        "name": "level",
+                        "value": 3,
+                    },
+                ],
+            }
+        ],
+    },
+}
+
+QUERY_RESPONSE_WITH_DOOR_SENSOR = {
+    "header": {
+        "namespace": "Uhome.Device",
+        "name": "Query",
+        "messageId": "test-msg-id",
+        "payloadVersion": "1",
+    },
+    "payload": {
+        "devices": [
+            {
+                "id": "AA:BB:CC:DD:EE:02",
+                "states": [
+                    {
+                        "capability": "st.healthCheck",
+                        "name": "status",
+                        "value": "online",
+                    },
+                    {
+                        "capability": "st.Lock",
+                        "name": "lockState",
+                        "value": "locked",
+                    },
+                    {
+                        "capability": "st.BatteryLevel",
+                        "name": "level",
+                        "value": 4,
+                    },
+                    {
+                        "capability": "st.DoorSensor",
+                        "name": "sensorState",
+                        "value": "closed",
+                    },
+                ],
+            }
+        ],
+    },
+}
+
+QUERY_RESPONSE_DOOR_OPEN = {
+    "header": {
+        "namespace": "Uhome.Device",
+        "name": "Query",
+        "messageId": "test-msg-id",
+        "payloadVersion": "1",
+    },
+    "payload": {
+        "devices": [
+            {
+                "id": "AA:BB:CC:DD:EE:02",
+                "states": [
+                    {
+                        "capability": "st.healthCheck",
+                        "name": "status",
+                        "value": "online",
+                    },
+                    {
+                        "capability": "st.Lock",
+                        "name": "lockState",
+                        "value": "unlocked",
+                    },
+                    {
+                        "capability": "st.BatteryLevel",
+                        "name": "level",
+                        "value": 4,
+                    },
+                    {
+                        "capability": "st.DoorSensor",
+                        "name": "sensorState",
+                        "value": "open",
+                    },
+                ],
+            }
+        ],
+    },
+}
+
+SET_MODE_COMMAND_RESPONSE = {
+    "header": {
+        "namespace": "Uhome.Device",
+        "name": "Command",
+        "messageId": "test-msg-id",
+        "payloadVersion": "1",
+    },
+    "payload": {
+        "devices": [
+            {
+                "id": "AA:BB:CC:DD:EE:01",
+                "states": [
+                    {
+                        "capability": "st.deferredResponse",
+                        "name": "seconds",
+                        "value": 5,
+                    }
+                ],
+            }
+        ],
+    },
+}
+
+LOCK_USER_LIST_RESPONSE = {
+    "header": {
+        "namespace": "Uhome.Device",
+        "name": "Command",
+        "messageId": "test-msg-id",
+        "payloadVersion": "1",
+    },
+    "payload": {
+        "devices": [
+            {
+                "id": "AA:BB:CC:DD:EE:01",
+                "states": [
+                    {
+                        "name": "user1",
+                        "type": 0,
+                        "id": 100,
+                    },
+                    {
+                        "name": "admin",
+                        "type": 3,
+                        "id": 101,
+                    },
+                ],
+            }
+        ],
+    },
+}
+
 ERROR_RESPONSE_INVALID_TOKEN = {
     "header": {
         "namespace": "Uhome.Device",
@@ -476,6 +636,8 @@ class TestCoordinatorDataModels:
         assert state.online is False
         assert state.lock_state is None
         assert state.battery_level is None
+        assert state.is_jammed is False
+        assert state.door_state is None
 
     def test_device_state_populated(self):
         """Device state can be populated."""
@@ -487,6 +649,33 @@ class TestCoordinatorDataModels:
         assert state.online is True
         assert state.lock_state == "locked"
         assert state.battery_level == 85
+        assert state.is_jammed is False
+
+    def test_device_state_jammed(self):
+        """Device state can represent jammed lock."""
+        state = _models.XthingsDeviceState(
+            online=True,
+            lock_state="jammed",
+            is_jammed=True,
+        )
+        assert state.is_jammed is True
+        assert state.lock_state == "jammed"
+
+    def test_device_state_door_sensor(self):
+        """Device state can include door sensor."""
+        state = _models.XthingsDeviceState(
+            online=True,
+            lock_state="locked",
+            door_state="closed",
+        )
+        assert state.door_state == "closed"
+
+        state_open = _models.XthingsDeviceState(
+            online=True,
+            lock_state="unlocked",
+            door_state="open",
+        )
+        assert state_open.door_state == "open"
 
     def test_coordinator_data_defaults(self):
         """Coordinator data has empty defaults."""
@@ -578,11 +767,275 @@ class TestConstants:
         assert _const.CAP_LOCK_STATE == "st.Lock"
         assert _const.CAP_BATTERY_LEVEL == "st.BatteryLevel"
         assert _const.CAP_DEFERRED_RESPONSE == "st.deferredResponse"
+        assert _const.CAP_DOOR_SENSOR == "st.DoorSensor"
 
     def test_lock_handlers(self):
         """Supported lock handlers include expected types."""
         assert "utec-lock" in _const.SUPPORTED_LOCK_HANDLERS
         assert "utec-lock-sensor" in _const.SUPPORTED_LOCK_HANDLERS
+
+
+class TestJammedStateParsing:
+    """Test parsing of jammed lock state."""
+
+    def test_jammed_state_detected(self):
+        """Parse jammed state correctly from query response."""
+        states = QUERY_RESPONSE_JAMMED["payload"]["devices"][0]["states"]
+
+        lock_state = next(s for s in states if s["capability"] == "st.Lock")
+        assert lock_state["value"] == "jammed"
+
+    def test_jammed_state_value(self):
+        """Jammed state maps to is_jammed in device state model."""
+        state = _models.XthingsDeviceState(
+            online=True,
+            lock_state="jammed",
+            is_jammed=True,
+        )
+        assert state.is_jammed is True
+
+    def test_non_jammed_state(self):
+        """Locked/unlocked states are not jammed."""
+        state = _models.XthingsDeviceState(
+            online=True,
+            lock_state="locked",
+            is_jammed=False,
+        )
+        assert state.is_jammed is False
+
+
+class TestDoorSensorParsing:
+    """Test parsing of door sensor state."""
+
+    def test_door_closed(self):
+        """Parse door closed state."""
+        states = QUERY_RESPONSE_WITH_DOOR_SENSOR["payload"]["devices"][0]["states"]
+
+        door = next(s for s in states if s["capability"] == "st.DoorSensor")
+        assert door["name"] == "sensorState"
+        assert door["value"] == "closed"
+
+    def test_door_open(self):
+        """Parse door open state."""
+        states = QUERY_RESPONSE_DOOR_OPEN["payload"]["devices"][0]["states"]
+
+        door = next(s for s in states if s["capability"] == "st.DoorSensor")
+        assert door["value"] == "open"
+
+    def test_door_sensor_in_device_state(self):
+        """Door state model stores sensor value."""
+        state = _models.XthingsDeviceState(door_state="closed")
+        assert state.door_state == "closed"
+
+        state = _models.XthingsDeviceState(door_state="open")
+        assert state.door_state == "open"
+
+    def test_door_sensor_absent(self):
+        """Devices without door sensor have None door_state."""
+        state = _models.XthingsDeviceState(online=True, lock_state="locked")
+        assert state.door_state is None
+
+
+class TestSetModeCommand:
+    """Test lock mode setting command construction."""
+
+    def test_set_mode_request_body(self):
+        """setMode command has correct capability and arguments."""
+        body = {
+            "header": {
+                "namespace": "Uhome.Device",
+                "name": "Command",
+                "messageId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "payloadVersion": "1",
+            },
+            "payload": {
+                "devices": [
+                    {
+                        "id": "AA:BB:CC:DD:EE:01",
+                        "command": {
+                            "capability": "st.lock",
+                            "name": "setMode",
+                            "arguments": {"mode": 0},
+                        },
+                    }
+                ],
+            },
+        }
+        command = body["payload"]["devices"][0]["command"]
+        assert command["capability"] == "st.lock"
+        assert command["name"] == "setMode"
+        assert command["arguments"]["mode"] == 0
+
+    def test_set_mode_deferred_response(self):
+        """setMode returns deferred response."""
+        states = SET_MODE_COMMAND_RESPONSE["payload"]["devices"][0]["states"]
+        deferred = next(
+            s for s in states if s["capability"] == "st.deferredResponse"
+        )
+        assert deferred["value"] == 5
+
+
+class TestLockUserManagementCommands:
+    """Test lock user management command construction."""
+
+    def test_list_users_request(self):
+        """List users command has correct structure."""
+        body = {
+            "header": {
+                "namespace": "Uhome.Device",
+                "name": "Command",
+                "messageId": "test-uuid",
+                "payloadVersion": "1",
+            },
+            "payload": {
+                "devices": [
+                    {
+                        "id": "AA:BB:CC:DD:EE:01",
+                        "command": {
+                            "capability": "st.lockUser",
+                            "name": "list",
+                        },
+                    }
+                ],
+            },
+        }
+        command = body["payload"]["devices"][0]["command"]
+        assert command["capability"] == "st.lockUser"
+        assert command["name"] == "list"
+
+    def test_list_users_response(self):
+        """List users response contains user data."""
+        states = LOCK_USER_LIST_RESPONSE["payload"]["devices"][0]["states"]
+        assert len(states) == 2
+        assert states[0]["name"] == "user1"
+        assert states[0]["type"] == 0
+        assert states[1]["name"] == "admin"
+        assert states[1]["type"] == 3
+
+    def test_add_user_request(self):
+        """Add user command includes user object in arguments."""
+        body = {
+            "header": {
+                "namespace": "Uhome.Device",
+                "name": "Command",
+                "messageId": "test-uuid",
+                "payloadVersion": "1",
+            },
+            "payload": {
+                "devices": [
+                    {
+                        "id": "AA:BB:CC:DD:EE:01",
+                        "command": {
+                            "capability": "st.lockUser",
+                            "name": "add",
+                            "arguments": {
+                                "user": {
+                                    "name": "Guest",
+                                    "type": 0,
+                                    "password": 123456,
+                                }
+                            },
+                        },
+                    }
+                ],
+            },
+        }
+        command = body["payload"]["devices"][0]["command"]
+        assert command["name"] == "add"
+        user = command["arguments"]["user"]
+        assert user["name"] == "Guest"
+        assert user["type"] == 0
+        assert user["password"] == 123456
+
+    def test_add_temporary_user_request(self):
+        """Temporary user includes schedule fields."""
+        user = {
+            "name": "Temp Guest",
+            "type": 2,
+            "password": 1234,
+            "daterange": ["2024-07-01 00:00", "2024-07-31 23:59"],
+            "weeks": [0, 1, 2, 3, 4, 5, 6],
+            "timerange": ["08:00", "18:00"],
+            "limit": 10,
+        }
+        assert user["type"] == 2
+        assert len(user["daterange"]) == 2
+        assert len(user["weeks"]) == 7
+        assert len(user["timerange"]) == 2
+        assert user["limit"] == 10
+
+    def test_update_user_request(self):
+        """Update user command includes id field."""
+        command = {
+            "capability": "st.lockUser",
+            "name": "update",
+            "arguments": {
+                "user": {
+                    "id": 23456,
+                    "name": "Updated Name",
+                    "type": 0,
+                    "password": 654321,
+                }
+            },
+        }
+        user = command["arguments"]["user"]
+        assert "id" in user
+        assert user["id"] == 23456
+        assert user["name"] == "Updated Name"
+
+    def test_delete_user_request(self):
+        """Delete user command has correct structure."""
+        command = {
+            "capability": "st.lockUser",
+            "name": "delete",
+            "arguments": {"id": 23456},
+        }
+        assert command["name"] == "delete"
+        assert command["arguments"]["id"] == 23456
+
+    def test_get_user_request(self):
+        """Get user command has correct structure."""
+        command = {
+            "capability": "st.lockUser",
+            "name": "get",
+            "arguments": {"id": 100},
+        }
+        assert command["name"] == "get"
+        assert command["arguments"]["id"] == 100
+
+
+class TestDeviceHandlerTypes:
+    """Test device handler type identification."""
+
+    def test_utec_lock_handler(self):
+        """utec-lock handler supports Lock, BatteryLevel, LockUser."""
+        info = _models.XthingsDeviceInfo(
+            device_id="test-id",
+            name="U-Bolt Pro",
+            category="LOCK",
+            handle_type="utec-lock",
+            manufacturer="U-tec",
+            model="U-Bolt-Pro-WiFi",
+            hw_version="1.0",
+        )
+        assert info.is_lock is True
+        # utec-lock does NOT have door sensor (LockUser instead)
+        assert info.handle_type != "utec-lock-sensor"
+
+    def test_utec_lock_sensor_handler(self):
+        """utec-lock-sensor handler supports Lock, BatteryLevel, DoorSensor."""
+        info = _models.XthingsDeviceInfo(
+            device_id="test-id",
+            name="U-Bolt WiFi",
+            category="LOCK",
+            handle_type="utec-lock-sensor",
+            manufacturer="U-tec",
+            model="U-Bolt-WiFi",
+            hw_version="1.0",
+        )
+        assert info.is_lock is True
+        # utec-lock-sensor has DoorSensor capability
+        assert info.handle_type == "utec-lock-sensor"
 
 
 if __name__ == "__main__":
