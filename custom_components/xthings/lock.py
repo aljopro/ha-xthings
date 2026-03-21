@@ -48,6 +48,7 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         """Initialize the lock entity."""
         super().__init__(coordinator, device_info)
         self._attr_unique_id = f"{device_info.device_id}_lock"
+        self._last_lock_state: str | None = None
 
     @property
     def is_locked(self) -> bool | None:
@@ -55,6 +56,14 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         state = self._device_state
         if state is None or state.lock_state is None:
             return None
+        # Track state changes to clear locking/unlocking flags
+        if self._last_lock_state != state.lock_state:
+            self._last_lock_state = state.lock_state
+            # Clear locking/unlocking flags when actual state changes
+            if hasattr(self, "_attr_is_locking"):
+                delattr(self, "_attr_is_locking")
+            if hasattr(self, "_attr_is_unlocking"):
+                delattr(self, "_attr_is_unlocking")
         return state.lock_state == "locked"
 
     @property
@@ -86,10 +95,11 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
                 await self.coordinator.async_request_refresh()
         except Exception:
             _LOGGER.exception("Failed to lock %s", self._device_info.name)
-            raise
-        finally:
-            self._attr_is_locking = False
+            # Clear locking flag on error
+            if hasattr(self, "_attr_is_locking"):
+                delattr(self, "_attr_is_locking")
             self.async_write_ha_state()
+            raise
 
     async def async_unlock(self, **kwargs: Any) -> None:
         """Unlock the device."""
@@ -110,7 +120,8 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
                 await self.coordinator.async_request_refresh()
         except Exception:
             _LOGGER.exception("Failed to unlock %s", self._device_info.name)
-            raise
-        finally:
-            self._attr_is_unlocking = False
+            # Clear unlocking flag on error
+            if hasattr(self, "_attr_is_unlocking"):
+                delattr(self, "_attr_is_unlocking")
             self.async_write_ha_state()
+            raise
