@@ -97,7 +97,11 @@ MOCK_QUERY_LOCKED = {
             {
                 "id": MOCK_DEVICE_ID,
                 "states": [
-                    {"capability": "st.healthCheck", "name": "status", "value": "online"},
+                    {
+                        "capability": "st.healthCheck",
+                        "name": "status",
+                        "value": "online",
+                    },
                     {"capability": "st.Lock", "name": "lockState", "value": "locked"},
                     {"capability": "st.BatteryLevel", "name": "level", "value": 85},
                 ],
@@ -118,7 +122,11 @@ MOCK_QUERY_UNLOCKED = {
             {
                 "id": MOCK_DEVICE_ID,
                 "states": [
-                    {"capability": "st.healthCheck", "name": "status", "value": "online"},
+                    {
+                        "capability": "st.healthCheck",
+                        "name": "status",
+                        "value": "online",
+                    },
                     {"capability": "st.Lock", "name": "lockState", "value": "unlocked"},
                     {"capability": "st.BatteryLevel", "name": "level", "value": 72},
                 ],
@@ -139,7 +147,11 @@ MOCK_COMMAND_DEFERRED = {
             {
                 "id": MOCK_DEVICE_ID,
                 "states": [
-                    {"capability": "st.deferredResponse", "name": "seconds", "value": 10},
+                    {
+                        "capability": "st.deferredResponse",
+                        "name": "seconds",
+                        "value": 10,
+                    },
                 ],
             }
         ],

@@ -67,7 +67,9 @@ def get_credentials() -> tuple[str, str]:
     """Get client_id and client_secret from env or .env file."""
     env = load_env()
     client_id = os.environ.get("XTHINGS_CLIENT_ID") or env.get("XTHINGS_CLIENT_ID")
-    client_secret = os.environ.get("XTHINGS_CLIENT_SECRET") or env.get("XTHINGS_CLIENT_SECRET")
+    client_secret = os.environ.get("XTHINGS_CLIENT_SECRET") or env.get(
+        "XTHINGS_CLIENT_SECRET"
+    )
 
     if not client_id or not client_secret:
         print("ERROR: XTHINGS_CLIENT_ID and XTHINGS_CLIENT_SECRET must be set.")
@@ -81,6 +83,7 @@ def get_credentials() -> tuple[str, str]:
 
 # ── OAuth2 Flow ─────────────────────────────────────────────────
 
+
 class OAuth2CallbackServer:
     """Temporary HTTP server to catch the OAuth2 callback."""
 
@@ -91,9 +94,8 @@ class OAuth2CallbackServer:
     async def handle_callback(self, request: web.Request) -> web.Response:
         """Handle the OAuth2 callback redirect."""
         # Xthings uses 'authorization_code' instead of 'code'
-        self.authorization_code = (
-            request.query.get("code")
-            or request.query.get("authorization_code")
+        self.authorization_code = request.query.get("code") or request.query.get(
+            "authorization_code"
         )
         state = request.query.get("state", "")
 
@@ -259,7 +261,9 @@ async def load_or_refresh_tokens(client_id: str) -> dict | None:
                     if "refresh_token" not in new_tokens:
                         new_tokens["refresh_token"] = refresh_token
                     TOKEN_FILE.write_text(json.dumps(new_tokens, indent=2))
-                    print(f"✅ Token refreshed: {new_tokens.get('access_token', '')[:16]}...")
+                    print(
+                        f"✅ Token refreshed: {new_tokens.get('access_token', '')[:16]}..."
+                    )
                     return new_tokens
                 print(f"❌ Refresh failed: {resp.status} {await resp.text()}")
 
@@ -267,6 +271,7 @@ async def load_or_refresh_tokens(client_id: str) -> dict | None:
 
 
 # ── API Test Functions ──────────────────────────────────────────
+
 
 async def api_request(
     session: aiohttp.ClientSession,
@@ -354,7 +359,10 @@ async def test_query_device(
         device_payload["customData"] = custom_data
 
     response = await api_request(
-        session, token, "Uhome.Device", "Query",
+        session,
+        token,
+        "Uhome.Device",
+        "Query",
         {"devices": [device_payload]},
     )
     payload = response.get("payload", {})
@@ -400,7 +408,10 @@ async def test_lock_command(
         device_payload["customData"] = custom_data
 
     response = await api_request(
-        session, token, "Uhome.Device", "Command",
+        session,
+        token,
+        "Uhome.Device",
+        "Command",
         {"devices": [device_payload]},
     )
     payload = response.get("payload", {})
@@ -424,6 +435,7 @@ async def test_lock_command(
 
 
 # ── Main ────────────────────────────────────────────────────────
+
 
 async def main():
     """Run all tests."""
@@ -449,7 +461,9 @@ async def main():
         devices = await test_discover_devices(session, access_token)
 
         if not devices:
-            print("\n⚠️  No devices found. Make sure your locks are set up in the Xthings app.")
+            print(
+                "\n⚠️  No devices found. Make sure your locks are set up in the Xthings app."
+            )
             return
 
         # Test 3: Query each lock device
@@ -460,7 +474,8 @@ async def main():
             if category == "LOCK" or handle_type in ("utec-lock", "utec-lock-sensor"):
                 lock_devices.append(device)
                 await test_query_device(
-                    session, access_token,
+                    session,
+                    access_token,
                     device["id"],
                     device.get("customData"),
                 )
@@ -477,7 +492,9 @@ async def main():
         test_device = lock_devices[0]
         device_id = test_device["id"]
         custom_data = test_device.get("customData")
-        print(f"\nTest device: {test_device.get('name', 'Unknown')} ({device_id[:20]}...)")
+        print(
+            f"\nTest device: {test_device.get('name', 'Unknown')} ({device_id[:20]}...)"
+        )
 
         while True:
             print("\nOptions:")
@@ -488,12 +505,16 @@ async def main():
             choice = input("\nChoice: ").strip().lower()
 
             if choice == "l":
-                await test_lock_command(session, access_token, device_id, "lock", custom_data)
+                await test_lock_command(
+                    session, access_token, device_id, "lock", custom_data
+                )
                 print("   Waiting 12s for deferred response...")
                 await asyncio.sleep(12)
                 await test_query_device(session, access_token, device_id, custom_data)
             elif choice == "u":
-                await test_lock_command(session, access_token, device_id, "unlock", custom_data)
+                await test_lock_command(
+                    session, access_token, device_id, "unlock", custom_data
+                )
                 print("   Waiting 12s for deferred response...")
                 await asyncio.sleep(12)
                 await test_query_device(session, access_token, device_id, custom_data)

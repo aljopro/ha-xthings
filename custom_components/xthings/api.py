@@ -135,9 +135,7 @@ class XthingsOAuth2Implementation(
                     resp.status,
                     error_text,
                 )
-                raise RuntimeError(
-                    f"Token request failed: {resp.status} {error_text}"
-                )
+                raise RuntimeError(f"Token request failed: {resp.status} {error_text}")
             token_data = await resp.json()
 
         # Normalize token response to what HA expects
@@ -253,9 +251,7 @@ class XthingsApiClient:
             "Authorization": f"Bearer {access_token}",
         }
 
-        _LOGGER.debug(
-            "API request: %s.%s (messageId=%s)", namespace, name, message_id
-        )
+        _LOGGER.debug("API request: %s.%s (messageId=%s)", namespace, name, message_id)
 
         async with self._http.post(
             API_BASE_URL, json=request_body, headers=headers
@@ -267,9 +263,7 @@ class XthingsApiClient:
                     resp.status,
                     error_text,
                 )
-                raise XthingsApiError(
-                    f"API request failed: {resp.status} {error_text}"
-                )
+                raise XthingsApiError(f"API request failed: {resp.status} {error_text}")
 
             response_data = await resp.json()
 

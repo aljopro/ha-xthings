@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+# Pre-push verification script - runs all checks before pushing to GitHub
+# Usage: ./scripts/precheck [--fix]
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+FIX_MODE="${1:-}"
+
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${CYAN}   Home Assistant Xthings - Pre-Push Verification${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}\n"
+
+CHECKS_PASSED=0
+CHECKS_FAILED=0
+
+run_check() {
+    local name="$1"
+    local cmd="$2"
+    
+    echo -e "${YELLOW}[CHECK]${NC} $name..."
+    if eval "$cmd" 2>&1; then
+        echo -e "${GREEN}  ✓ Passed${NC}\n"
+        ((CHECKS_PASSED++))
+        return 0
+    else
+        echo -e "${RED}  ✗ Failed${NC}\n"
+        ((CHECKS_FAILED++))
+        return 1
+    fi
+}
+
+# 1. Format check / fix
+if [ "$FIX_MODE" = "--fix" ]; then
+    echo -e "${YELLOW}[FIX]${NC} Formatting code with ruff...\n"
+    ruff format . --quiet
+    echo -e "${GREEN}  ✓ Formatted${NC}\n"
+    ((CHECKS_PASSED++))
+else
+    run_check "Ruff format check" "ruff format . --check --quiet"
+fi
+
+# 2. Lint check
+run_check "Ruff linting" "ruff check . --quiet"
+
+# 3. Unit tests (skip if Home Assistant not installed - will run in CI)
+if python -m pytest tests/ -v --tb=short 2>&1; then
+    echo -e "${GREEN}  ✓ Passed${NC}\n"
+    ((CHECKS_PASSED++))
+else
+    TEST_EXIT=$?
+    # Exit code 1 = test failures, 4 = no tests collected, 5 = no tests run
+    if [ "$TEST_EXIT" -eq 4 ] || [ "$TEST_EXIT" -eq 5 ]; then
+        echo -e "${YELLOW}  ⚠ Tests skipped (dependencies not available - will run in CI)${NC}\n"
+        ((CHECKS_PASSED++))
+    else
+        echo -e "${RED}  ✗ Tests failed${NC}\n"
+        ((CHECKS_FAILED++))
+    fi
+fi
+
+# 4. Manifest validation
+echo -e "${YELLOW}[CHECK]${NC} Validating manifest.json..."
+if python -c "
+import json
+with open('custom_components/xthings/manifest.json') as f:
+    manifest = json.load(f)
+    required_keys = ['domain', 'name', 'version', 'documentation', 'requirements']
+    missing = [k for k in required_keys if k not in manifest]
+    if missing:
+        raise ValueError(f'Missing keys: {missing}')
+    if 'ha-xthings' not in manifest.get('documentation', ''):
+        raise ValueError('Invalid documentation URL')
+    print('  ✓ Manifest is valid')
+" 2>&1; then
+    echo -e "${GREEN}  ✓ Passed${NC}\n"
+    ((CHECKS_PASSED++))
+else
+    echo -e "${RED}  ✗ Failed${NC}\n"
+    ((CHECKS_FAILED++))
+fi
+
+# 5. Git status check
+echo -e "${YELLOW}[CHECK]${NC} Git working directory..."
+if [ -z "$(git status --porcelain)" ]; then
+    echo -e "${GREEN}  ✓ Clean working directory${NC}\n"
+    ((CHECKS_PASSED++))
+else
+    echo -e "${YELLOW}  ⚠ Uncommitted changes:${NC}"
+    git status --short | sed 's/^/    /'
+    echo ""
+    ((CHECKS_FAILED++))
+fi
+
+# 6. Check for common mistakes
+echo -e "${YELLOW}[CHECK]${NC} Checking for common mistakes..."
+MISTAKES=0
+
+# Check for debug prints left in component code
+if grep -r "print(" custom_components/xthings/ --include="*.py" | grep -v "^#"; then
+    echo -e "    ${RED}✗ Debug print() found in component code${NC}"
+    ((MISTAKES++))
+fi
+
+# Check for commented-out imports
+if grep -r "^#.*import" custom_components/xthings/ --include="*.py" | head -3; then
+    echo -e "    ${YELLOW}⚠ Commented imports found (review if intentional)${NC}"
+fi
+
+if [ "$MISTAKES" -eq 0 ]; then
+    echo -e "${GREEN}  ✓ No common mistakes detected${NC}\n"
+    ((CHECKS_PASSED++))
+else
+    echo -e "${RED}  ✗ Issues found${NC}\n"
+    ((CHECKS_FAILED++))
+fi
+
+# Summary
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${CYAN}   Summary: ${GREEN}$CHECKS_PASSED passed${NC}${CYAN} | ${RED}$CHECKS_FAILED failed${NC}${CYAN}${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}\n"
+
+if [ "$CHECKS_FAILED" -eq 0 ]; then
+    echo -e "${GREEN}✓ All checks passed! Safe to push.${NC}\n"
+    exit 0
+else
+    echo -e "${RED}✗ Some checks failed. Fix them before pushing.${NC}"
+    echo -e "${YELLOW}Tip: Run ${CYAN}./scripts/precheck --fix${YELLOW} to auto-fix formatting${NC}\n"
+    exit 1
+fi

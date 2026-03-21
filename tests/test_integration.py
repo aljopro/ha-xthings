@@ -216,9 +216,7 @@ async def test_lock_command(hass: HomeAssistant, mock_api: AsyncMock) -> None:
         )
         await hass.async_block_till_done()
 
-    mock_api.async_lock.assert_called_once_with(
-        MOCK_DEVICE_ID, {"userId": 12345}
-    )
+    mock_api.async_lock.assert_called_once_with(MOCK_DEVICE_ID, {"userId": 12345})
 
 
 @pytest.mark.asyncio
@@ -253,9 +251,7 @@ async def test_unlock_command(hass: HomeAssistant, mock_api: AsyncMock) -> None:
         )
         await hass.async_block_till_done()
 
-    mock_api.async_unlock.assert_called_once_with(
-        MOCK_DEVICE_ID, {"userId": 12345}
-    )
+    mock_api.async_unlock.assert_called_once_with(MOCK_DEVICE_ID, {"userId": 12345})
 
 
 # ── Battery sensor tests ───────────────────────────────────────

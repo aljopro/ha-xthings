@@ -69,9 +69,7 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
                 "Authentication failed during device discovery"
             ) from err
         except XthingsApiError as err:
-            raise UpdateFailed(
-                f"Failed to discover devices: {err}"
-            ) from err
+            raise UpdateFailed(f"Failed to discover devices: {err}") from err
 
         device_map: dict[str, XthingsDeviceInfo] = {}
         for device in devices:
@@ -135,7 +133,9 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
             state = XthingsDeviceState()
             _LOGGER.debug(
                 "Raw states for %s (%s): %s",
-                device_info.name, device_id, device_states,
+                device_info.name,
+                device_id,
+                device_states,
             )
             for s in device_states:
                 capability = s.get("capability", "").lower()
@@ -161,6 +161,7 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
 
         Used after lock/unlock commands which return a deferred response.
         """
+
         async def _delayed_refresh() -> None:
             await asyncio.sleep(seconds)
             await self.async_request_refresh()

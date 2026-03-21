@@ -479,9 +479,7 @@ class TestCommandParsing:
         """Lock command returns deferred response."""
         states = COMMAND_RESPONSE_DEFERRED["payload"]["devices"][0]["states"]
 
-        deferred = next(
-            s for s in states if s["capability"] == "st.deferredResponse"
-        )
+        deferred = next(s for s in states if s["capability"] == "st.deferredResponse")
         assert deferred["name"] == "seconds"
         assert deferred["value"] == 10
 
@@ -865,9 +863,7 @@ class TestSetModeCommand:
     def test_set_mode_deferred_response(self):
         """SetMode returns deferred response."""
         states = SET_MODE_COMMAND_RESPONSE["payload"]["devices"][0]["states"]
-        deferred = next(
-            s for s in states if s["capability"] == "st.deferredResponse"
-        )
+        deferred = next(s for s in states if s["capability"] == "st.deferredResponse")
         assert deferred["value"] == 5
 
 

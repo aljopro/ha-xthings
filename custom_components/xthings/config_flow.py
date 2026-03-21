@@ -38,17 +38,13 @@ class XthingsOAuth2FlowHandler(
             entry_id = self.context.get("entry_id", "")
             reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
             if reauth_entry is not None:
-                self.hass.config_entries.async_update_entry(
-                    reauth_entry, data=data
-                )
+                self.hass.config_entries.async_update_entry(reauth_entry, data=data)
                 await self.hass.config_entries.async_reload(entry_id)
                 return self.async_abort(reason="reauth_successful")
 
         return self.async_create_entry(title="Xthings (U-tec)", data=data)
 
-    async def async_step_reauth(
-        self, entry_data: dict[str, Any]
-    ) -> FlowResult:
+    async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
         """Handle re-authentication when the token has expired."""
         return await self.async_step_reauth_confirm()
 
