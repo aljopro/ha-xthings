@@ -23,5 +23,125 @@
   },
   "application_credentials": {
     "description": "To obtain credentials, open the Xthings / ULTRALOQ app, go to **Settings > OpenAPI**, and activate it. Copy the **Client ID** and **Client Secret** shown there.\n\nSet the **Redirect URI** in the app to:\n`{redirect_url}`"
+  },
+  "services": {
+    "set_lock_mode": {
+      "name": "Set lock mode",
+      "description": "Set the operating mode on a lock device.",
+      "fields": {
+        "device_id": {
+          "name": "Device ID",
+          "description": "The Xthings device ID of the lock (e.g. MAC address)."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "The lock mode to set (integer value)."
+        }
+      }
+    },
+    "list_lock_users": {
+      "name": "List lock users",
+      "description": "Retrieve all users configured on a lock device.",
+      "fields": {
+        "device_id": {
+          "name": "Device ID",
+          "description": "The Xthings device ID of the lock."
+        }
+      }
+    },
+    "add_lock_user": {
+      "name": "Add lock user",
+      "description": "Add a new user (access code) to a lock device.",
+      "fields": {
+        "device_id": {
+          "name": "Device ID",
+          "description": "The Xthings device ID of the lock."
+        },
+        "user_name": {
+          "name": "User name",
+          "description": "Display name for the lock user."
+        },
+        "user_type": {
+          "name": "User type",
+          "description": "0 = Normal, 2 = Temporary, 3 = Admin."
+        },
+        "password": {
+          "name": "Password",
+          "description": "A 4 to 8-digit PIN code."
+        },
+        "date_range": {
+          "name": "Date range",
+          "description": "Date range for temporary users (list of two strings: start, end). Example: [\"2024-07-01 00:00\", \"2024-07-31 23:59\"]."
+        },
+        "weeks": {
+          "name": "Allowed days",
+          "description": "Days of the week the user can unlock (0=Sunday through 6=Saturday)."
+        },
+        "time_range": {
+          "name": "Time range",
+          "description": "Daily time window for access (list of two strings: start, end). Example: [\"08:00\", \"18:00\"]."
+        },
+        "limit": {
+          "name": "Unlock limit",
+          "description": "Maximum number of unlocks allowed. 0 or omit for unlimited."
+        }
+      }
+    },
+    "update_lock_user": {
+      "name": "Update lock user",
+      "description": "Update an existing user on a lock device.",
+      "fields": {
+        "device_id": {
+          "name": "Device ID",
+          "description": "The Xthings device ID of the lock."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "The lock user ID to update."
+        },
+        "user_name": {
+          "name": "User name",
+          "description": "New display name for the lock user."
+        },
+        "user_type": {
+          "name": "User type",
+          "description": "0 = Normal, 2 = Temporary, 3 = Admin."
+        },
+        "password": {
+          "name": "Password",
+          "description": "A new 4 to 8-digit PIN code."
+        },
+        "date_range": {
+          "name": "Date range",
+          "description": "Date range for temporary users."
+        },
+        "weeks": {
+          "name": "Allowed days",
+          "description": "Days of the week the user can unlock."
+        },
+        "time_range": {
+          "name": "Time range",
+          "description": "Daily time window for access."
+        },
+        "limit": {
+          "name": "Unlock limit",
+          "description": "Maximum number of unlocks allowed."
+        }
+      }
+    },
+    "delete_lock_user": {
+      "name": "Delete lock user",
+      "description": "Remove a user from a lock device.",
+      "fields": {
+        "device_id": {
+          "name": "Device ID",
+          "description": "The Xthings device ID of the lock."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "The lock user ID to delete."
+        }
+      }
+    }
   }
 }

@@ -149,6 +149,14 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
         Uses the standard OAuth2 refresh_token grant, but via GET as
         xthings appears to use GET for all token operations.
         """
+        return await self._do_refresh_token(token)
+
+    async def _async_refresh_token(self, token: dict) -> dict:
+        """Refresh the access token (HA 2026.3+ abstract method name)."""
+        return await self._do_refresh_token(token)
+
+    async def _do_refresh_token(self, token: dict) -> dict:
+        """Perform the actual token refresh."""
         refresh_token = token.get("refresh_token")
         if not refresh_token:
             raise RuntimeError("No refresh token available")
@@ -362,7 +370,7 @@ class XthingsApiClient:
         if devices:
             states = devices[0].get("states", [])
             for state in states:
-                if state.get("capability") == CAP_DEFERRED_RESPONSE:
+                if state.get("capability", "").lower() == "st.deferredresponse":
                     return state.get("value")
 
         return None
