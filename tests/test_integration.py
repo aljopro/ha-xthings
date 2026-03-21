@@ -1,4 +1,5 @@
-"""Integration tests for the Xthings (U-tec) custom component.
+"""
+Integration tests for the Xthings (U-tec) custom component.
 
 These tests use the real Home Assistant ``hass`` fixture provided by
 pytest-homeassistant-custom-component.
@@ -6,21 +7,15 @@ pytest-homeassistant-custom-component.
 
 from __future__ import annotations
 
-import asyncio
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import (
     STATE_LOCKED,
     STATE_UNLOCKED,
-    STATE_UNAVAILABLE,
-    STATE_UNKNOWN,
 )
 from homeassistant.core import HomeAssistant
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.xthings.const import DOMAIN
@@ -34,12 +29,8 @@ from .conftest import (
     MOCK_CONFIG_ENTRY_DATA,
     MOCK_DEVICE_ID,
     MOCK_DEVICE_ID_2,
-    MOCK_DISCOVERY_RESPONSE,
-    MOCK_QUERY_LOCKED,
     MOCK_QUERY_UNLOCKED,
-    build_coordinator_data,
 )
-
 
 # ── Helpers ─────────────────────────────────────────────────────
 
@@ -155,7 +146,7 @@ async def test_lock_entity_locked(hass: HomeAssistant, mock_api: AsyncMock) -> N
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    state = hass.states.get(f"lock.front_door_lock")
+    state = hass.states.get("lock.front_door_lock")
     assert state is not None
     assert state.state == STATE_LOCKED
 
@@ -188,7 +179,7 @@ async def test_lock_entity_unlocked(hass: HomeAssistant, mock_api: AsyncMock) ->
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    state = hass.states.get(f"lock.front_door_lock")
+    state = hass.states.get("lock.front_door_lock")
     assert state is not None
     assert state.state == STATE_UNLOCKED
 
@@ -220,7 +211,7 @@ async def test_lock_command(hass: HomeAssistant, mock_api: AsyncMock) -> None:
         await hass.services.async_call(
             "lock",
             "lock",
-            {"entity_id": f"lock.front_door_lock"},
+            {"entity_id": "lock.front_door_lock"},
             blocking=True,
         )
         await hass.async_block_till_done()
@@ -257,7 +248,7 @@ async def test_unlock_command(hass: HomeAssistant, mock_api: AsyncMock) -> None:
         await hass.services.async_call(
             "lock",
             "unlock",
-            {"entity_id": f"lock.front_door_lock"},
+            {"entity_id": "lock.front_door_lock"},
             blocking=True,
         )
         await hass.async_block_till_done()
@@ -293,7 +284,7 @@ async def test_battery_sensor(hass: HomeAssistant, mock_api: AsyncMock) -> None:
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    state = hass.states.get(f"sensor.front_door_lock_battery")
+    state = hass.states.get("sensor.front_door_lock_battery")
     assert state is not None
     assert state.state == "85"
 

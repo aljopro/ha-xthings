@@ -21,8 +21,10 @@ PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.LOCK, Platform.SEN
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Xthings (U-tec) from a config entry."""
     # Get the OAuth2 implementation and create a session
-    implementation = await config_entry_oauth2_flow.async_get_config_entry_implementation(
-        hass, entry
+    implementation = (
+        await config_entry_oauth2_flow.async_get_config_entry_implementation(
+            hass, entry
+        )
     )
     session = config_entry_oauth2_flow.OAuth2Session(hass, entry, implementation)
 

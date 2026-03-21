@@ -26,12 +26,11 @@ async def async_setup_entry(
     """Set up Xthings lock entities from a config entry."""
     coordinator: XthingsDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    entities: list[XthingsLockEntity] = []
-    for device_id, device_info in coordinator.data.devices.items():
-        if device_info.is_lock:
-            entities.append(
-                XthingsLockEntity(coordinator, device_info)
-            )
+    entities: list[XthingsLockEntity] = [
+        XthingsLockEntity(coordinator, device_info)
+        for device_info in coordinator.data.devices.values()
+        if device_info.is_lock
+    ]
 
     async_add_entities(entities)
 

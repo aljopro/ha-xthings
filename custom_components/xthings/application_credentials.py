@@ -26,7 +26,8 @@ async def async_get_auth_implementation(
     auth_domain: str,
     credential: ClientCredential,
 ) -> config_entry_oauth2_flow.AbstractOAuth2Implementation:
-    """Return a custom auth implementation.
+    """
+    Return a custom auth implementation.
 
     Xthings uses a non-standard OAuth2 flow (GET for token endpoint,
     client_secret in authorize URL, 'authorization_code' callback param),

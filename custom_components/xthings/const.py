@@ -8,6 +8,7 @@ OAUTH2_TOKEN_URL = "https://oauth.u-tec.com/token"
 
 # API
 API_BASE_URL = "https://api.u-tec.com/action"
+HTTP_OK = 200
 
 # Polling
 DEFAULT_SCAN_INTERVAL = 60  # seconds

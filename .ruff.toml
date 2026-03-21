@@ -2,6 +2,8 @@
 
 target-version = "py312"
 
+exclude = ["_gen_icon.py"]
+
 [lint]
 select = [
     "ALL",
@@ -13,6 +15,26 @@ ignore = [
     "D212",   # multi-line-summary-first-line (incompatible with formatter)
     "COM812", # incompatible with formatter
     "ISC001", # incompatible with formatter
+    "TC001",  # typing-only-first-party-import (HA patterns don't use TYPE_CHECKING)
+    "TC002",  # typing-only-third-party-import (HA patterns don't use TYPE_CHECKING)
+    "TC003",  # typing-only-standard-library-import (HA patterns don't use TYPE_CHECKING)
+    "TRY003", # raise-vanilla-args (overly pedantic)
+    "EM101",  # raw-string-in-exception (overly pedantic)
+    "EM102",  # f-string-in-exception (overly pedantic)
+]
+
+[lint.per-file-ignores]
+"custom_components/__init__.py" = ["D104"]
+"custom_components/xthings/application_credentials.py" = ["ARG001"]
+"custom_components/xthings/config_flow.py" = ["ARG002"]
+"custom_components/xthings/const.py" = ["S105"]
+"custom_components/xthings/lock.py" = ["ARG002"]
+"tests/**" = [
+    "S101", "S105", "T201", "ANN201", "ANN202", "ANN204",
+    "PLR2004", "D100", "D103", "D104", "D107",
+    "FBT001", "FBT002", "ARG001", "PLR0915", "PT028",
+    "PLW2901", "ASYNC109", "ASYNC250", "SIM117", "RET504", "F841", "EXE001",
+    "E501",  # Line too long in tests
 ]
 
 [lint.flake8-pytest-style]

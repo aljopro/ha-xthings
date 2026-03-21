@@ -1,4 +1,5 @@
-"""Data models for the Xthings (U-tec) integration.
+"""
+Data models for the Xthings (U-tec) integration.
 
 Kept separate from coordinator.py so they can be imported
 and tested without the homeassistant dependency.

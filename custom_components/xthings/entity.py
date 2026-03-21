@@ -7,7 +7,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import XthingsDataUpdateCoordinator
-from .models import XthingsDeviceInfo
+from .models import XthingsDeviceInfo, XthingsDeviceState
 
 
 class XthingsEntity(CoordinatorEntity[XthingsDataUpdateCoordinator]):
@@ -35,7 +35,7 @@ class XthingsEntity(CoordinatorEntity[XthingsDataUpdateCoordinator]):
         )
 
     @property
-    def _device_state(self):
+    def _device_state(self) -> XthingsDeviceState | None:
         """Get the current device state from coordinator data."""
         if self.coordinator.data and self.coordinator.data.states:
             return self.coordinator.data.states.get(self._device_id)

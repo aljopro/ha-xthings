@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import timedelta
-from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -14,9 +13,6 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import XthingsApiClient, XthingsApiError, XthingsAuthError
 from .const import (
-    CAP_BATTERY_LEVEL,
-    CAP_HEALTH_CHECK,
-    CAP_LOCK_STATE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -160,7 +156,8 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
         return data
 
     async def async_request_refresh_after(self, seconds: int) -> None:
-        """Schedule a coordinator refresh after a delay.
+        """
+        Schedule a coordinator refresh after a delay.
 
         Used after lock/unlock commands which return a deferred response.
         """

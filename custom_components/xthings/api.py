@@ -8,13 +8,13 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_entry_oauth2_flow
-from homeassistant.helpers.config_entry_oauth2_flow import _encode_jwt
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.config_entry_oauth2_flow import _encode_jwt
 from homeassistant.helpers.network import get_url
 
 from .const import (
     API_BASE_URL,
-    CAP_DEFERRED_RESPONSE,
+    HTTP_OK,
     NS_DEVICE,
     NS_USER,
     OAUTH2_AUTHORIZE_URL,
@@ -24,8 +24,11 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Implementation):
-    """Custom OAuth2 implementation for xthings.
+class XthingsOAuth2Implementation(
+    config_entry_oauth2_flow.AbstractOAuth2Implementation
+):
+    """
+    Custom OAuth2 implementation for xthings.
 
     The xthings OAuth2 flow deviates from the standard:
     - The authorize URL requires client_secret as a query parameter.
@@ -62,7 +65,8 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
         return {}
 
     async def async_generate_authorize_url(self, flow_id: str) -> str:
-        """Generate the authorize URL.
+        """
+        Generate the authorize URL.
 
         Xthings requires client_secret in the authorize URL query params.
         The state parameter must be a JWT so HA's OAuth callback view can
@@ -92,7 +96,8 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
         return f"{base_url}/auth/external/callback"
 
     async def async_resolve_external_data(self, external_data: Any) -> dict:
-        """Resolve external data to tokens.
+        """
+        Resolve external data to tokens.
 
         Called after the user completes the OAuth flow. The external_data
         contains the callback query parameters. Xthings uses 'authorization_code'
@@ -106,7 +111,8 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
         return await self._async_token_request(code)
 
     async def _async_token_request(self, code: str) -> dict:
-        """Exchange authorization code for tokens.
+        """
+        Exchange authorization code for tokens.
 
         Xthings uses GET with query parameters instead of POST with body.
         """
@@ -122,7 +128,7 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
         _LOGGER.debug("Requesting token from xthings OAuth")
 
         async with session.get(url) as resp:
-            if resp.status != 200:
+            if resp.status != HTTP_OK:
                 error_text = await resp.text()
                 _LOGGER.error(
                     "Token request failed with status %s: %s",
@@ -144,7 +150,8 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
         return token_data
 
     async def async_refresh_token(self, token: dict) -> dict:
-        """Refresh the access token.
+        """
+        Refresh the access token.
 
         Uses the standard OAuth2 refresh_token grant, but via GET as
         xthings appears to use GET for all token operations.
@@ -173,7 +180,7 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
         _LOGGER.debug("Refreshing xthings OAuth token")
 
         async with session.get(url) as resp:
-            if resp.status != 200:
+            if resp.status != HTTP_OK:
                 error_text = await resp.text()
                 _LOGGER.error(
                     "Token refresh failed with status %s: %s",
@@ -195,7 +202,8 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
 
 
 class XthingsApiClient:
-    """API client for the xthings (U-tec) cloud API.
+    """
+    API client for the xthings (U-tec) cloud API.
 
     All API calls go to a single POST endpoint. The specific operation
     is determined by the namespace and name fields in the request body.
@@ -217,7 +225,8 @@ class XthingsApiClient:
         name: str,
         payload: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Make an API request to xthings.
+        """
+        Make an API request to xthings.
 
         All requests go to POST https://api.u-tec.com/action with
         a JSON body containing header (namespace, name, messageId,
@@ -251,7 +260,7 @@ class XthingsApiClient:
         async with self._http.post(
             API_BASE_URL, json=request_body, headers=headers
         ) as resp:
-            if resp.status != 200:
+            if resp.status != HTTP_OK:
                 error_text = await resp.text()
                 _LOGGER.error(
                     "API request failed with status %s: %s",
@@ -297,7 +306,8 @@ class XthingsApiClient:
         device_id: str,
         custom_data: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
-        """Query the current state of a device.
+        """
+        Query the current state of a device.
 
         Returns a list of state objects with capability, name, and value.
         """
@@ -322,7 +332,8 @@ class XthingsApiClient:
         device_id: str,
         custom_data: dict[str, Any] | None = None,
     ) -> int | None:
-        """Send a lock command to a device.
+        """
+        Send a lock command to a device.
 
         Returns the deferred response timeout in seconds, or None.
         """
@@ -333,7 +344,8 @@ class XthingsApiClient:
         device_id: str,
         custom_data: dict[str, Any] | None = None,
     ) -> int | None:
-        """Send an unlock command to a device.
+        """
+        Send an unlock command to a device.
 
         Returns the deferred response timeout in seconds, or None.
         """
@@ -345,7 +357,8 @@ class XthingsApiClient:
         command_name: str,
         custom_data: dict[str, Any] | None = None,
     ) -> int | None:
-        """Send a lock/unlock command.
+        """
+        Send a lock/unlock command.
 
         Returns the deferred response seconds if the command is async.
         """

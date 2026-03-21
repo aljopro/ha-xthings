@@ -3,13 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-
-from homeassistant.core import HomeAssistant
-from homeassistant.setup import async_setup_component
 
 from custom_components.xthings.const import DOMAIN
 from custom_components.xthings.models import (
@@ -18,7 +14,6 @@ from custom_components.xthings.models import (
     XthingsDeviceState,
 )
 
-
 # ── Pytest-homeassistant-custom-component fixtures ──────────────
 
 
@@ -26,13 +21,14 @@ from custom_components.xthings.models import (
 def auto_enable_custom_integrations(
     enable_custom_integrations: None,
 ) -> Generator[None, None, None]:
-    """Automatically enable custom integrations in all tests.
+    """
+    Automatically enable custom integrations in all tests.
 
     The ``enable_custom_integrations`` fixture comes from
     pytest-homeassistant-custom-component and patches loader.py
     so that custom_components/ is discovered.
     """
-    yield
+    return
 
 
 # ── Mock data ───────────────────────────────────────────────────

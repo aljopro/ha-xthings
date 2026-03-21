@@ -1,4 +1,5 @@
-"""Unit tests for the Xthings (U-tec) integration.
+"""
+Unit tests for the Xthings (U-tec) integration.
 
 These tests mock the API responses to validate the coordinator,
 entity logic, and data parsing without hitting the real API.
@@ -10,20 +11,15 @@ Usage:
 
 from __future__ import annotations
 
-import asyncio
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
-
 # ── Module loading helpers ──────────────────────────────────────
 # We load const.py and models.py directly via importlib to avoid
 # triggering __init__.py which imports homeassistant (not available
 # in the test environment without a full HA install).
-
 import importlib.util
 import sys
 from pathlib import Path
+
+import pytest
 
 PROJECT_ROOT = Path(__file__).parent.parent
 COMPONENTS_DIR = PROJECT_ROOT / "custom_components" / "xthings"
@@ -840,7 +836,7 @@ class TestSetModeCommand:
     """Test lock mode setting command construction."""
 
     def test_set_mode_request_body(self):
-        """setMode command has correct capability and arguments."""
+        """SetMode command has correct capability and arguments."""
         body = {
             "header": {
                 "namespace": "Uhome.Device",
@@ -867,7 +863,7 @@ class TestSetModeCommand:
         assert command["arguments"]["mode"] == 0
 
     def test_set_mode_deferred_response(self):
-        """setMode returns deferred response."""
+        """SetMode returns deferred response."""
         states = SET_MODE_COMMAND_RESPONSE["payload"]["devices"][0]["states"]
         deferred = next(
             s for s in states if s["capability"] == "st.deferredResponse"

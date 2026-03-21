@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Standalone test script for the Xthings (U-tec) API.
+"""
+Standalone test script for the Xthings (U-tec) API.
 
 This script tests the OAuth2 flow and API calls directly against
 the xthings cloud service, without requiring Home Assistant.
@@ -33,7 +34,6 @@ import sys
 import uuid
 import webbrowser
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
 
 import aiohttp
 from aiohttp import web
@@ -110,26 +110,25 @@ class OAuth2CallbackServer:
                     "</body></html>"
                 ),
             )
-        else:
-            error = request.query.get("error", "unknown")
-            error_desc = request.query.get("error_description", "No description")
-            self._event.set()
-            return web.Response(
-                content_type="text/html",
-                text=(
-                    "<html><body style='font-family:system-ui;text-align:center;padding:40px'>"
-                    f"<h1>❌ Authorization Failed</h1>"
-                    f"<p>Error: {error}</p>"
-                    f"<p>{error_desc}</p>"
-                    "</body></html>"
-                ),
-            )
+        error = request.query.get("error", "unknown")
+        error_desc = request.query.get("error_description", "No description")
+        self._event.set()
+        return web.Response(
+            content_type="text/html",
+            text=(
+                "<html><body style='font-family:system-ui;text-align:center;padding:40px'>"
+                f"<h1>❌ Authorization Failed</h1>"
+                f"<p>Error: {error}</p>"
+                f"<p>{error_desc}</p>"
+                "</body></html>"
+            ),
+        )
 
     async def wait_for_callback(self, timeout: float = 120) -> str | None:
         """Wait for the OAuth2 callback."""
         try:
             await asyncio.wait_for(self._event.wait(), timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return None
         return self.authorization_code
 
@@ -160,7 +159,7 @@ async def get_tokens_oauth(client_id: str, client_secret: str) -> dict:
         f"&state={state}"
     )
 
-    print(f"\n🔐 Opening browser for authorization...")
+    print("\n🔐 Opening browser for authorization...")
     print(f"   URL: {auth_url[:80]}...")
     webbrowser.open(auth_url)
     print(f"   Waiting for callback on {REDIRECT_URI} ...")
@@ -182,18 +181,17 @@ async def get_tokens_oauth(client_id: str, client_secret: str) -> dict:
         f"&code={code}"
     )
 
-    print(f"\n🔑 Exchanging code for tokens...")
-    async with aiohttp.ClientSession() as session:
-        async with session.get(token_url) as resp:
-            print(f"   Token response status: {resp.status}")
-            body = await resp.text()
-            print(f"   Token response body: {body[:200]}")
+    print("\n🔑 Exchanging code for tokens...")
+    async with aiohttp.ClientSession() as session, session.get(token_url) as resp:
+        print(f"   Token response status: {resp.status}")
+        body = await resp.text()
+        print(f"   Token response body: {body[:200]}")
 
-            if resp.status != 200:
-                print(f"❌ Token exchange failed!")
-                sys.exit(1)
+        if resp.status != 200:
+            print("❌ Token exchange failed!")
+            sys.exit(1)
 
-            tokens = json.loads(body)
+        tokens = json.loads(body)
 
     tokens.setdefault("token_type", "Bearer")
     print(f"✅ Got access token: {tokens.get('access_token', 'MISSING')[:16]}...")
@@ -242,8 +240,7 @@ async def load_or_refresh_tokens(client_id: str) -> dict | None:
             if "error" not in data.get("payload", {}):
                 print("✅ Saved tokens are still valid!")
                 return tokens
-            else:
-                print(f"⚠️  Token expired: {data['payload']['error']}")
+            print(f"⚠️  Token expired: {data['payload']['error']}")
 
     # Try refresh
     if refresh_token:
@@ -264,8 +261,7 @@ async def load_or_refresh_tokens(client_id: str) -> dict | None:
                     TOKEN_FILE.write_text(json.dumps(new_tokens, indent=2))
                     print(f"✅ Token refreshed: {new_tokens.get('access_token', '')[:16]}...")
                     return new_tokens
-                else:
-                    print(f"❌ Refresh failed: {resp.status} {await resp.text()}")
+                print(f"❌ Refresh failed: {resp.status} {await resp.text()}")
 
     return None
 
