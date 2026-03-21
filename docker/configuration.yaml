@@ -3,7 +3,7 @@
 
 homeassistant:
   name: Xthings Dev
-  unit_system: imperial
+  unit_system: us_customary
   time_zone: America/Chicago
   internal_url: "http://localhost:8123"
   external_url: "http://localhost:8123"
