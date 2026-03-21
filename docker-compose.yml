@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  homeassistant:
+    container_name: ha-xthings-dev
+    image: ghcr.io/home-assistant/home-assistant:stable
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+    volumes:
+      # Mount the custom integration into HA
+      - ./custom_components/xthings:/config/custom_components/xthings:ro
+      # Persistent HA config (DB, auth, etc.)
+      - ha_config:/config
+      # Mount our dev configuration.yaml
+      - ./docker/configuration.yaml:/config/configuration.yaml:ro
+    environment:
+      - TZ=America/Chicago
+
+volumes:
+  ha_config:

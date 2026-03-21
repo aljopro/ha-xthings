@@ -1,0 +1,17 @@
+{
+  "name": "Xthings HA Integration Dev",
+  "image": "ghcr.io/home-assistant/home-assistant:stable",
+  "forwardPorts": [8123],
+  "postCreateCommand": "pip install pytest pytest-asyncio pytest-homeassistant-custom-component",
+  "mounts": [
+    "source=${localWorkspaceFolder}/custom_components/xthings,target=/config/custom_components/xthings,type=bind"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  }
+}

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
-from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any
 
@@ -17,52 +17,16 @@ from .const import (
     CAP_BATTERY_LEVEL,
     CAP_HEALTH_CHECK,
     CAP_LOCK_STATE,
-    CATEGORY_LOCK,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
-    SUPPORTED_LOCK_HANDLERS,
+)
+from .models import (
+    XthingsCoordinatorData,
+    XthingsDeviceInfo,
+    XthingsDeviceState,
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-
-@dataclass
-class XthingsDeviceInfo:
-    """Cached device information from Discovery."""
-
-    device_id: str
-    name: str
-    category: str
-    handle_type: str
-    manufacturer: str
-    model: str
-    hw_version: str
-    custom_data: dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def is_lock(self) -> bool:
-        """Return True if this device is a lock."""
-        return (
-            self.category.upper() == CATEGORY_LOCK
-            or self.handle_type in SUPPORTED_LOCK_HANDLERS
-        )
-
-
-@dataclass
-class XthingsDeviceState:
-    """Current state of a device."""
-
-    online: bool = False
-    lock_state: str | None = None  # "locked" / "unlocked"
-    battery_level: int | None = None
-
-
-@dataclass
-class XthingsCoordinatorData:
-    """Data structure held by the coordinator."""
-
-    devices: dict[str, XthingsDeviceInfo] = field(default_factory=dict)
-    states: dict[str, XthingsDeviceState] = field(default_factory=dict)
 
 
 class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]):
@@ -81,12 +45,12 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
             hass,
             _LOGGER,
             name=DOMAIN,
-            config_entry=config_entry,
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
+        self.config_entry = config_entry
         self.api = api
 
-    async def _async_setup(self) -> None:
+    async def async_setup(self) -> None:
         """Perform initial setup: discover devices."""
         await self._async_discover_devices()
 
@@ -186,7 +150,6 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
         Used after lock/unlock commands which return a deferred response.
         """
         async def _delayed_refresh() -> None:
-            import asyncio
             await asyncio.sleep(seconds)
             await self.async_request_refresh()
 

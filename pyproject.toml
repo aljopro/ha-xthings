@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=62.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ha-xthings"
+version = "0.1.0"
+description = "Home Assistant custom integration for U-tec (xthings) smart locks"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+norecursedirs = [".git", ".tox"]

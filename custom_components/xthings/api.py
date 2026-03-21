@@ -6,10 +6,10 @@ import logging
 import uuid
 from typing import Any
 
-import aiohttp
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_entry_oauth2_flow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.network import get_url
 
 from .const import (
     API_BASE_URL,
@@ -79,7 +79,11 @@ class XthingsOAuth2Implementation(config_entry_oauth2_flow.AbstractOAuth2Impleme
     @property
     def redirect_uri(self) -> str:
         """Return the redirect URI."""
-        return f"{config_entry_oauth2_flow.async_get_authorize_url(self.hass)}"
+        try:
+            base_url = get_url(self.hass, allow_internal=True, prefer_external=True)
+        except Exception:  # noqa: BLE001
+            base_url = get_url(self.hass)
+        return f"{base_url}/auth/external/callback"
 
     async def async_resolve_external_data(self, external_data: Any) -> dict:
         """Resolve external data to tokens.

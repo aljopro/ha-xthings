@@ -1,0 +1,18 @@
+# Minimal configuration for xthings integration development.
+# This file is mounted into the HA Docker container.
+
+homeassistant:
+  name: Xthings Dev
+  unit_system: imperial
+  time_zone: America/Chicago
+
+# Enable debug logging for our integration
+logger:
+  default: info
+  logs:
+    custom_components.xthings: debug
+
+# Required for the OAuth2 external auth flow
+http:
+  use_x_forwarded_for: false
+  trusted_proxies: []
