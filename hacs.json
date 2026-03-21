@@ -1,4 +1,5 @@
 {
   "name": "Xthings (U-tec)",
-  "homeassistant": "2024.8.0"
+  "homeassistant": "2024.8.0",
+  "render_readme": true
 }

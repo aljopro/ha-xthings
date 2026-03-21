@@ -7,13 +7,12 @@ from typing import Any
 
 from homeassistant.components.lock import LockEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import XthingsDataUpdateCoordinator
+from .entity import XthingsEntity
 from .models import XthingsDeviceInfo
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,12 +36,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class XthingsLockEntity(
-    CoordinatorEntity[XthingsDataUpdateCoordinator], LockEntity
-):
+class XthingsLockEntity(XthingsEntity, LockEntity):
     """Representation of a U-tec lock via the xthings API."""
 
-    _attr_has_entity_name = True
     _attr_name = None  # Use device name as entity name
 
     def __init__(
@@ -51,36 +47,8 @@ class XthingsLockEntity(
         device_info: XthingsDeviceInfo,
     ) -> None:
         """Initialize the lock entity."""
-        super().__init__(coordinator, context=device_info.device_id)
-
-        self._device_id = device_info.device_id
-        self._device_info = device_info
-
-        # Entity attributes
+        super().__init__(coordinator, device_info)
         self._attr_unique_id = f"{device_info.device_id}_lock"
-
-        # Device registry info — groups lock + battery sensor under one device
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, device_info.device_id)},
-            name=device_info.name,
-            manufacturer=device_info.manufacturer,
-            model=device_info.model,
-            sw_version=device_info.hw_version,
-        )
-
-    @property
-    def _device_state(self):
-        """Get the current device state from coordinator data."""
-        if self.coordinator.data and self.coordinator.data.states:
-            return self.coordinator.data.states.get(self._device_id)
-        return None
-
-    @property
-    def available(self) -> bool:
-        """Return True if we have state data from the coordinator."""
-        if not super().available:
-            return False
-        return self._device_state is not None
 
     @property
     def is_locked(self) -> bool | None:
@@ -147,8 +115,3 @@ class XthingsLockEntity(
         finally:
             self._attr_is_unlocking = False
             self.async_write_ha_state()
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        self.async_write_ha_state()
