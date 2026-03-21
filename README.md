@@ -118,6 +118,8 @@ scripts/develop
 docker compose up
 ```
 
+For architecture details and Xthings API documentation, see the [`docs/`](docs/) folder and [`.instructions.md`](.instructions.md).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution workflow, branch strategy, and release process.
 
 ## License

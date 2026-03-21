@@ -84,6 +84,14 @@ Releases are automated. When PRs are merged to `main`:
 4. The workflow bumps `manifest.json`, creates a tag, and publishes the GitHub release.
 5. HACS picks up the new version automatically.
 
+## Documentation
+
+For deeper understanding of the integration and the Xthings API:
+
+- **[`.instructions.md`](.instructions.md)** — Architecture overview, coding patterns, and component guidelines.
+- **[`docs/articles/`](docs/articles/)** — Xthings OpenAPI documentation including device discovery, lock control, lock user management, event notifications, and capability references.
+- **[`docs/categories/`](docs/categories/)** and **[`docs/sections/`](docs/sections/)** — API category and section indexes.
+
 ## Report bugs
 
 GitHub issues are used to track bugs. Report a bug by [opening a new issue](https://github.com/aljopro/ha-xthings/issues/new/choose).
