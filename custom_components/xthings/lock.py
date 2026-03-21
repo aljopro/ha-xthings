@@ -49,6 +49,8 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         super().__init__(coordinator, device_info)
         self._attr_unique_id = f"{device_info.device_id}_lock"
         self._last_lock_state: str | None = None
+        self._locking: bool = False
+        self._unlocking: bool = False
 
     @property
     def is_locked(self) -> bool | None:
@@ -60,27 +62,25 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         if self._last_lock_state != state.lock_state:
             self._last_lock_state = state.lock_state
             # Clear locking/unlocking flags when actual state changes
-            if hasattr(self, "_attr_is_locking"):
-                delattr(self, "_attr_is_locking")
-            if hasattr(self, "_attr_is_unlocking"):
-                delattr(self, "_attr_is_unlocking")
+            self._locking = False
+            self._unlocking = False
         return state.lock_state == "locked"
 
     @property
     def is_locking(self) -> bool:
         """Return True if the lock is in the process of locking."""
-        return self._attr_is_locking if hasattr(self, "_attr_is_locking") else False
+        return self._locking
 
     @property
     def is_unlocking(self) -> bool:
         """Return True if the lock is in the process of unlocking."""
-        return self._attr_is_unlocking if hasattr(self, "_attr_is_unlocking") else False
+        return self._unlocking
 
     async def async_lock(self, **kwargs: Any) -> None:
         """Lock the device."""
         _LOGGER.debug("Locking %s (%s)", self._device_info.name, self._device_id)
 
-        self._attr_is_locking = True
+        self._locking = True
         self.async_write_ha_state()
 
         try:
@@ -96,8 +96,7 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         except Exception:
             _LOGGER.exception("Failed to lock %s", self._device_info.name)
             # Clear locking flag on error
-            if hasattr(self, "_attr_is_locking"):
-                delattr(self, "_attr_is_locking")
+            self._locking = False
             self.async_write_ha_state()
             raise
 
@@ -105,7 +104,7 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         """Unlock the device."""
         _LOGGER.debug("Unlocking %s (%s)", self._device_info.name, self._device_id)
 
-        self._attr_is_unlocking = True
+        self._unlocking = True
         self.async_write_ha_state()
 
         try:
@@ -121,7 +120,6 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         except Exception:
             _LOGGER.exception("Failed to unlock %s", self._device_info.name)
             # Clear unlocking flag on error
-            if hasattr(self, "_attr_is_unlocking"):
-                delattr(self, "_attr_is_unlocking")
+            self._unlocking = False
             self.async_write_ha_state()
             raise
