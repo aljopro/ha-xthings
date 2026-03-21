@@ -1,0 +1,13 @@
+{
+  "domain": "xthings",
+  "name": "Xthings (U-tec)",
+  "version": "0.1.0",
+  "codeowners": ["@jensen"],
+  "config_flow": true,
+  "dependencies": ["application_credentials"],
+  "documentation": "https://github.com/jensen/ha-xthings",
+  "issue_tracker": "https://github.com/jensen/ha-xthings/issues",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": []
+}
