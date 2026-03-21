@@ -1,7 +1,7 @@
 # Xthings (U-tec) Integration for Home Assistant
 
 [![HACS Validation](https://github.com/aljopro/ha-xthings/actions/workflows/validate.yml/badge.svg)](https://github.com/aljopro/ha-xthings/actions/workflows/validate.yml)
-[![Hassfest](https://github.com/aljopro/ha-xthings/actions/workflows/hassfest.yml/badge.svg)](https://github.com/aljopro/ha-xthings/actions/workflows/hassfest.yml)
+[![Lint](https://github.com/aljopro/ha-xthings/actions/workflows/lint.yml/badge.svg)](https://github.com/aljopro/ha-xthings/actions/workflows/lint.yml)
 
 A custom Home Assistant integration for **U-tec ULTRALOQ** WiFi smart locks via the [Xthings OpenAPI](https://developer.xthings.com/hc/en-us/sections/39589678120985-Developer-Documentation).
 
@@ -103,9 +103,22 @@ For each discovered lock, the integration creates:
 ```bash
 # Clone the repository
 git clone https://github.com/aljopro/ha-xthings.git
+cd ha-xthings
 
-# The integration code is in custom_components/xthings/
+# Install dev dependencies
+scripts/setup
+
+# Run the linter
+scripts/lint
+
+# Start a local HA instance with the component
+scripts/develop
+
+# Or use Docker
+docker compose up
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution workflow, branch strategy, and release process.
 
 ## License
 
