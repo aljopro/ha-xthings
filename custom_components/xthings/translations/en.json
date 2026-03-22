@@ -28,7 +28,7 @@
     "step": {
       "init": {
         "title": "Xthings Options",
-        "description": "Enable push notifications for near-instant state updates. Nabu Casa Cloud status: **{cloud_status}**.\n\nIf you have Nabu Casa, leave the URL blank to use a cloudhook automatically. Otherwise, enter your externally reachable Home Assistant URL (e.g. `https://my-ha.duckdns.org`).",
+        "description": "Enable push notifications for near-instant state updates. Nabu Casa Cloud status: **{cloud_status}**.\n\nIf you have Nabu Casa, leave the URL blank to use a cloudhook automatically. Otherwise, enter your externally reachable Home Assistant URL (e.g. `{example_url}`).",
         "data": {
           "use_webhook": "Enable push notifications (webhook)",
           "webhook_url": "External Home Assistant URL (optional)"

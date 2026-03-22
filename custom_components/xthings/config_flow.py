@@ -97,6 +97,7 @@ class XthingsOptionsFlowHandler(OptionsFlowWithConfigEntry):
 
         description_placeholders = {
             "cloud_status": "connected" if cloud_available else "not connected",
+            "example_url": "https://my-ha.duckdns.org",
         }
 
         return self.async_show_form(
