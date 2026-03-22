@@ -35,6 +35,10 @@ A custom Home Assistant integration for **U-tec ULTRALOQ** WiFi smart locks via 
 
 ### HACS (Recommended)
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=aljopro&repository=ha-xthings&category=integration)
+
+Or manually:
+
 1. Open HACS in Home Assistant
 2. Click the **⋮** menu → **Custom repositories**
 3. Add `https://github.com/aljopro/ha-xthings` with category **Integration**
