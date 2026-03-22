@@ -5,10 +5,12 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import XthingsApiClient, XthingsApiError, XthingsAuthError
@@ -26,6 +28,10 @@ _LOGGER = logging.getLogger(__name__)
 
 # Xthings battery level is integer 1-5, map to approximate percentage
 BATTERY_LEVEL_MAP = {1: 10, 2: 30, 3: 50, 4: 75, 5: 100}
+
+# Rapid polling after commands
+RAPID_POLL_INTERVAL = 3  # seconds between rapid polls
+RAPID_POLL_MAX_CHECKS = 10  # max rapid polls before backing off
 
 
 def _battery_level_to_percent(level: int | None) -> int | None:
@@ -55,6 +61,8 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
         )
         self.config_entry = config_entry
         self.api = api
+        self._rapid_poll_count: int = 0
+        self._rapid_poll_unsub: CALLBACK_TYPE | None = None
 
     async def async_setup(self) -> None:
         """Perform initial setup: discover devices."""
@@ -156,14 +164,54 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
         return data
 
     async def async_request_refresh_after(self, seconds: int) -> None:
-        """
-        Schedule a coordinator refresh after a delay.
+        """Schedule rapid polling after a deferred command response."""
+        # Cancel any existing rapid poll schedule
+        self.cancel_rapid_poll()
 
-        Used after lock/unlock commands which return a deferred response.
-        """
-
-        async def _delayed_refresh() -> None:
+        async def _start_rapid_polling() -> None:
             await asyncio.sleep(seconds)
+            self._rapid_poll_count = 0
             await self.async_request_refresh()
+            self._schedule_next_rapid_poll()
 
-        self.hass.async_create_task(_delayed_refresh())
+        self.hass.async_create_task(_start_rapid_polling())
+
+    def start_rapid_polling(self) -> None:
+        """Start rapid polling immediately (no deferred delay)."""
+        self.cancel_rapid_poll()
+        self._rapid_poll_count = 0
+        self._schedule_next_rapid_poll()
+
+    def _schedule_next_rapid_poll(self) -> None:
+        """Schedule the next rapid poll if under the max check count."""
+        if self._rapid_poll_count >= RAPID_POLL_MAX_CHECKS:
+            _LOGGER.debug(
+                "Rapid polling complete after %d checks",
+                self._rapid_poll_count,
+            )
+            self._rapid_poll_unsub = None
+            return
+
+        self._rapid_poll_unsub = async_call_later(
+            self.hass,
+            RAPID_POLL_INTERVAL,
+            self._async_rapid_poll_tick,
+        )
+
+    async def _async_rapid_poll_tick(self, _now: Any) -> None:
+        """Execute one rapid poll tick."""
+        self._rapid_poll_count += 1
+        _LOGGER.debug(
+            "Rapid poll %d/%d",
+            self._rapid_poll_count,
+            RAPID_POLL_MAX_CHECKS,
+        )
+        await self.async_request_refresh()
+        self._schedule_next_rapid_poll()
+
+    def cancel_rapid_poll(self) -> None:
+        """Cancel any pending rapid poll."""
+        if self._rapid_poll_unsub:
+            self._rapid_poll_unsub()
+            self._rapid_poll_unsub = None
+        self._rapid_poll_count = 0

@@ -11,7 +11,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .coordinator import XthingsDataUpdateCoordinator
+from .coordinator import (
+    RAPID_POLL_INTERVAL,
+    RAPID_POLL_MAX_CHECKS,
+    XthingsDataUpdateCoordinator,
+)
 from .entity import XthingsEntity
 from .models import XthingsDeviceInfo
 
@@ -74,19 +78,32 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        # Clear in-progress flags when we receive fresh data after a command
         if self._command_in_flight:
-            self._command_in_flight = False
-            self._locking = False
-            self._unlocking = False
-            # Cancel scheduled timeouts since coordinator update arrived
-            if self._clear_locking_handle:
-                self._clear_locking_handle.cancel()
-                self._clear_locking_handle = None
-            if self._clear_unlocking_handle:
-                self._clear_unlocking_handle.cancel()
-                self._clear_unlocking_handle = None
+            state = self._device_state
+            expected_locked = self._locking
+            expected_unlocked = self._unlocking
+            actual_locked = state is not None and state.lock_state == "locked"
+            actual_unlocked = state is not None and state.lock_state == "unlocked"
+            # Clear flags if state matches the command or max polls hit
+            state_resolved = (expected_locked and actual_locked) or (
+                expected_unlocked and actual_unlocked
+            )
+            if state_resolved:
+                self._finish_command()
         super()._handle_coordinator_update()
+
+    def _finish_command(self) -> None:
+        """Clear all in-flight command state."""
+        self._command_in_flight = False
+        self._locking = False
+        self._unlocking = False
+        self.coordinator.cancel_rapid_poll()
+        if self._clear_locking_handle:
+            self._clear_locking_handle.cancel()
+            self._clear_locking_handle = None
+        if self._clear_unlocking_handle:
+            self._clear_unlocking_handle.cancel()
+            self._clear_unlocking_handle = None
 
     async def async_lock(self, **kwargs: Any) -> None:
         """Lock the device."""
@@ -105,17 +122,21 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
                 self._device_id, self._device_info.custom_data
             )
 
-            # Mark that a command is in flight so coordinator update clears flags
             self._command_in_flight = True
 
-            # Schedule a refresh after the deferred response period
+            # Start rapid polling after the deferred response period
             if deferred_seconds:
                 await self.coordinator.async_request_refresh_after(deferred_seconds + 2)
             else:
                 await self.coordinator.async_request_refresh()
+                self.coordinator.start_rapid_polling()
 
-            # Safety timeout: clear flag if coordinator update doesn't arrive
-            timeout = (deferred_seconds + 5) if deferred_seconds else 5
+            # Safety timeout: clear flags if rapid polling doesn't resolve
+            timeout = (
+                (deferred_seconds + RAPID_POLL_INTERVAL * RAPID_POLL_MAX_CHECKS)
+                if deferred_seconds
+                else RAPID_POLL_INTERVAL * RAPID_POLL_MAX_CHECKS
+            )
             self._clear_locking_handle = self.hass.loop.call_later(
                 timeout,
                 self._timeout_clear_flags,
@@ -144,17 +165,21 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
                 self._device_id, self._device_info.custom_data
             )
 
-            # Mark that a command is in flight so coordinator update clears flags
             self._command_in_flight = True
 
-            # Schedule a refresh after the deferred response period
+            # Start rapid polling after the deferred response period
             if deferred_seconds:
                 await self.coordinator.async_request_refresh_after(deferred_seconds + 2)
             else:
                 await self.coordinator.async_request_refresh()
+                self.coordinator.start_rapid_polling()
 
-            # Safety timeout: clear flag if coordinator update doesn't arrive
-            timeout = (deferred_seconds + 5) if deferred_seconds else 5
+            # Safety timeout: clear flags if rapid polling doesn't resolve
+            timeout = (
+                (deferred_seconds + RAPID_POLL_INTERVAL * RAPID_POLL_MAX_CHECKS)
+                if deferred_seconds
+                else RAPID_POLL_INTERVAL * RAPID_POLL_MAX_CHECKS
+            )
             self._clear_unlocking_handle = self.hass.loop.call_later(
                 timeout,
                 self._timeout_clear_flags,
@@ -168,9 +193,5 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
 
     def _timeout_clear_flags(self) -> None:
         """Safety timeout to clear in-progress flags."""
-        self._locking = False
-        self._unlocking = False
-        self._command_in_flight = False
-        self._clear_locking_handle = None
-        self._clear_unlocking_handle = None
+        self._finish_command()
         self.async_write_ha_state()
