@@ -1,13 +1,18 @@
 {
   "domain": "xthings",
   "name": "Xthings (U-tec)",
-  "codeowners": ["@aljopro"],
+  "codeowners": [
+    "@aljopro"
+  ],
   "config_flow": true,
-  "dependencies": ["application_credentials", "webhook"],
+  "dependencies": [
+    "application_credentials",
+    "webhook"
+  ],
   "documentation": "https://github.com/aljopro/ha-xthings",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/aljopro/ha-xthings/issues",
   "requirements": [],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }
