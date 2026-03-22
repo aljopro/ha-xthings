@@ -51,13 +51,15 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
         hass: HomeAssistant,
         config_entry: ConfigEntry,
         api: XthingsApiClient,
+        scan_interval: int | None = None,
     ) -> None:
         """Initialize the coordinator."""
+        interval = scan_interval or DEFAULT_SCAN_INTERVAL
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+            update_interval=timedelta(seconds=interval),
         )
         self.config_entry = config_entry
         self.api = api
@@ -215,3 +217,70 @@ class XthingsDataUpdateCoordinator(DataUpdateCoordinator[XthingsCoordinatorData]
             self._rapid_poll_unsub()
             self._rapid_poll_unsub = None
         self._rapid_poll_count = 0
+
+    async def async_process_webhook(
+        self,
+        namespace: str,
+        name: str,
+        payload: dict[str, Any],
+    ) -> None:
+        """Process an incoming webhook notification from Xthings."""
+        if namespace != "Uhome.Notification":
+            return
+
+        devices = payload.get("devices", [])
+        if not devices:
+            return
+
+        if name == "DeviceState":
+            await self._process_device_state(devices)
+        elif name == "DeviceSync":
+            _LOGGER.info("Device sync notification, triggering discovery")
+            await self._async_discover_devices()
+            await self.async_request_refresh()
+        elif name == "DeviceDelete":
+            _LOGGER.info("Device delete notification, triggering discovery")
+            await self._async_discover_devices()
+            await self.async_request_refresh()
+
+    async def _process_device_state(self, devices: list[dict[str, Any]]) -> None:
+        """Process DeviceState webhook events."""
+        if not self.data or not self.data.states:
+            return
+
+        updated = False
+        for device in devices:
+            device_id = device.get("id", "")
+            if device_id not in self.data.states:
+                continue
+
+            states_data = device.get("states", [])
+            # Handle states as list or dict-like
+            if isinstance(states_data, dict):
+                states_data = [states_data]
+
+            state = self.data.states[device_id]
+            for s in states_data:
+                capability = s.get("capability", "").lower()
+                cap_name = s.get("name", "")
+                value = s.get("value")
+
+                if capability == "st.healthcheck" and cap_name == "status":
+                    state.online = str(value).lower() == "online"
+                    updated = True
+                elif capability == "st.lock" and cap_name == "lockState":
+                    state.lock_state = str(value).lower()
+                    updated = True
+                elif capability == "st.batterylevel" and cap_name == "level":
+                    state.battery_level = _battery_level_to_percent(value)
+                    updated = True
+
+            if updated:
+                _LOGGER.debug(
+                    "Webhook updated state for %s: %s",
+                    device_id,
+                    state,
+                )
+
+        if updated:
+            self.async_set_updated_data(self.data)

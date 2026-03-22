@@ -3,7 +3,7 @@
   "name": "Xthings (U-tec)",
   "codeowners": ["@aljopro"],
   "config_flow": true,
-  "dependencies": ["application_credentials"],
+  "dependencies": ["application_credentials", "webhook"],
   "documentation": "https://github.com/aljopro/ha-xthings",
   "integration_type": "hub",
   "iot_class": "cloud_polling",

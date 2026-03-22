@@ -15,6 +15,7 @@ from homeassistant.helpers.network import get_url
 from .const import (
     API_BASE_URL,
     HTTP_OK,
+    NS_CONFIGURE,
     NS_DEVICE,
     NS_USER,
     OAUTH2_AUTHORIZE_URL,
@@ -381,6 +382,33 @@ class XthingsApiClient:
                     return state.get("value")
 
         return None
+
+    # ── Notification endpoints ──────────────────────────────────
+
+    async def async_register_notification_url(
+        self,
+        url: str,
+        access_token: str | None = None,
+    ) -> dict[str, Any]:
+        """Register a webhook URL for push notifications."""
+        if access_token is None:
+            await self._session.async_ensure_token_valid()
+            access_token = self._session.token["access_token"]
+
+        response = await self._async_request(
+            NS_CONFIGURE,
+            "Set",
+            {
+                "configure": {
+                    "notification": {
+                        "access_token": access_token,
+                        "url": url,
+                    }
+                }
+            },
+        )
+        _LOGGER.info("Registered notification URL: %s", url)
+        return response
 
 
 class XthingsApiError(Exception):

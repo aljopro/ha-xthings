@@ -24,6 +24,18 @@
   "application_credentials": {
     "description": "To obtain credentials, open the Xthings / ULTRALOQ app, go to **Settings > OpenAPI**, and activate it. Copy the **Client ID** and **Client Secret** shown there.\n\nSet the **Redirect URI** in the app to:\n`{redirect_url}`"
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Xthings Options",
+        "description": "Enable push notifications for near-instant state updates. Nabu Casa Cloud status: **{cloud_status}**.\n\nIf you have Nabu Casa, leave the URL blank to use a cloudhook automatically. Otherwise, enter your externally reachable Home Assistant URL (e.g. `https://my-ha.duckdns.org`).",
+        "data": {
+          "use_webhook": "Enable push notifications (webhook)",
+          "webhook_url": "External Home Assistant URL (optional)"
+        }
+      }
+    }
+  },
   "services": {
     "set_lock_mode": {
       "name": "Set lock mode",

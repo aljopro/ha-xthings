@@ -12,6 +12,13 @@ HTTP_OK = 200
 
 # Polling
 DEFAULT_SCAN_INTERVAL = 60  # seconds
+WEBHOOK_SCAN_INTERVAL = 300  # slower polling when webhooks are active
+
+# Webhook / push notifications
+CONF_USE_WEBHOOK = "use_webhook"
+CONF_WEBHOOK_URL = "webhook_url"
+WEBHOOK_ID_KEY = "webhook_id"
+CLOUDHOOK_URL_KEY = "cloudhook_url"
 
 # Xthings API namespaces
 NS_USER = "Uhome.User"
