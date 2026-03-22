@@ -78,18 +78,10 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
+        # Clear in-progress flags on any coordinator update after a command.
+        # Whatever the device reports (locked or unlocked) is the truth.
         if self._command_in_flight:
-            state = self._device_state
-            expected_locked = self._locking
-            expected_unlocked = self._unlocking
-            actual_locked = state is not None and state.lock_state == "locked"
-            actual_unlocked = state is not None and state.lock_state == "unlocked"
-            # Clear flags if state matches the command or max polls hit
-            state_resolved = (expected_locked and actual_locked) or (
-                expected_unlocked and actual_unlocked
-            )
-            if state_resolved:
-                self._finish_command()
+            self._finish_command()
         super()._handle_coordinator_update()
 
     def _finish_command(self) -> None:
