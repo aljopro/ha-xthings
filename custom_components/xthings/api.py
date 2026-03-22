@@ -91,6 +91,20 @@ class XthingsOAuth2Implementation(
     @property
     def redirect_uri(self) -> str:
         """Return the redirect URI."""
+        from .const import CONF_REDIRECT_URI  # noqa: PLC0415
+
+        # Check for override set during the config flow
+        override = self.hass.data.get(self._domain, {}).get("redirect_uri_override")
+        if override:
+            return override
+
+        # Check existing config entries for a stored redirect URI
+        for entry in self.hass.config_entries.async_entries(self._domain):
+            stored = entry.data.get(CONF_REDIRECT_URI)
+            if stored:
+                return stored
+
+        # Fall back to auto-detection
         try:
             base_url = get_url(self.hass, allow_internal=True, prefer_external=True)
         except Exception:  # noqa: BLE001

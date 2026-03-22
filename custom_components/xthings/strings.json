@@ -1,6 +1,13 @@
 {
   "config": {
     "step": {
+      "user": {
+        "title": "Redirect URI",
+        "description": "Verify the **Redirect URI** below matches what you configured in the Xthings / ULTRALOQ app under **Settings > OpenAPI**.\n\nAuto-detected: `{default_redirect_uri}`\n\nChange it only if the auto-detected value is incorrect.",
+        "data": {
+          "redirect_uri": "Redirect URI"
+        }
+      },
       "pick_implementation": {
         "title": "[%key:common::config_flow::title::oauth2_pick_implementation%]"
       },

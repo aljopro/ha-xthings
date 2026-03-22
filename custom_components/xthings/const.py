@@ -14,6 +14,9 @@ HTTP_OK = 200
 DEFAULT_SCAN_INTERVAL = 60  # seconds
 WEBHOOK_SCAN_INTERVAL = 300  # slower polling when webhooks are active
 
+# OAuth
+CONF_REDIRECT_URI = "redirect_uri"
+
 # Webhook / push notifications
 CONF_USE_WEBHOOK = "use_webhook"
 CONF_WEBHOOK_URL = "webhook_url"
