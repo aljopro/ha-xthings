@@ -29,7 +29,7 @@
     }
   },
   "application_credentials": {
-    "description": "To obtain credentials, open the Xthings / ULTRALOQ app, go to **Settings > OpenAPI**, and activate it. Copy the **Client ID** and **Client Secret** shown there.\n\nSet the **Redirect URI** in the app to your Home Assistant external URL followed by `/auth/external/callback` (e.g. `https://<your-id>.ui.nabu.casa/auth/external/callback`)."
+    "description": "To obtain credentials, open the Xthings / ULTRALOQ app, go to **Settings > OpenAPI**, and activate it. Copy the **Client ID** and **Client Secret** shown there.\n\nSet the **Redirect URI** in the app to your Home Assistant external URL followed by `/auth/external/callback` (e.g. `https://YOUR-ID.ui.nabu.casa/auth/external/callback`)."
   },
   "options": {
     "step": {
