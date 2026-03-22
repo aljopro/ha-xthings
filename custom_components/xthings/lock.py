@@ -48,9 +48,10 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         """Initialize the lock entity."""
         super().__init__(coordinator, device_info)
         self._attr_unique_id = f"{device_info.device_id}_lock"
-        self._last_lock_state: str | None = None
         self._locking: bool = False
         self._unlocking: bool = False
+        self._clear_locking_handle: Any = None
+        self._clear_unlocking_handle: Any = None
 
     @property
     def is_locked(self) -> bool | None:
@@ -58,12 +59,6 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         state = self._device_state
         if state is None or state.lock_state is None:
             return None
-        # Track state changes to clear locking/unlocking flags
-        if self._last_lock_state != state.lock_state:
-            self._last_lock_state = state.lock_state
-            # Clear locking/unlocking flags when actual state changes
-            self._locking = False
-            self._unlocking = False
         return state.lock_state == "locked"
 
     @property
@@ -76,9 +71,25 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         """Return True if the lock is in the process of unlocking."""
         return self._unlocking
 
+    def _clear_locking_flag(self) -> None:
+        """Clear the locking flag and update state."""
+        self._locking = False
+        self._clear_locking_handle = None
+        self.async_write_ha_state()
+
+    def _clear_unlocking_flag(self) -> None:
+        """Clear the unlocking flag and update state."""
+        self._unlocking = False
+        self._clear_unlocking_handle = None
+        self.async_write_ha_state()
+
     async def async_lock(self, **kwargs: Any) -> None:
         """Lock the device."""
         _LOGGER.debug("Locking %s (%s)", self._device_info.name, self._device_id)
+
+        # Cancel any pending flag clear
+        if self._clear_locking_handle:
+            self._clear_locking_handle()
 
         self._locking = True
         self.async_write_ha_state()
@@ -89,10 +100,17 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
             )
 
             # Schedule a refresh after the deferred response period
+            refresh_delay = (deferred_seconds + 2) if deferred_seconds else 1
             if deferred_seconds:
                 await self.coordinator.async_request_refresh_after(deferred_seconds + 2)
             else:
                 await self.coordinator.async_request_refresh()
+
+            # Schedule flag clear after refresh
+            self._clear_locking_handle = self.hass.loop.call_later(
+                refresh_delay + 1,
+                self._clear_locking_flag,
+            )
         except Exception:
             _LOGGER.exception("Failed to lock %s", self._device_info.name)
             # Clear locking flag on error
@@ -104,6 +122,10 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         """Unlock the device."""
         _LOGGER.debug("Unlocking %s (%s)", self._device_info.name, self._device_id)
 
+        # Cancel any pending flag clear
+        if self._clear_unlocking_handle:
+            self._clear_unlocking_handle()
+
         self._unlocking = True
         self.async_write_ha_state()
 
@@ -113,10 +135,17 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
             )
 
             # Schedule a refresh after the deferred response period
+            refresh_delay = (deferred_seconds + 2) if deferred_seconds else 1
             if deferred_seconds:
                 await self.coordinator.async_request_refresh_after(deferred_seconds + 2)
             else:
                 await self.coordinator.async_request_refresh()
+
+            # Schedule flag clear after refresh
+            self._clear_unlocking_handle = self.hass.loop.call_later(
+                refresh_delay + 1,
+                self._clear_unlocking_flag,
+            )
         except Exception:
             _LOGGER.exception("Failed to unlock %s", self._device_info.name)
             # Clear unlocking flag on error
