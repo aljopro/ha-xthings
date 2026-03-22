@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import Any
+from urllib.parse import quote
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_entry_oauth2_flow
@@ -83,7 +84,7 @@ class XthingsOAuth2Implementation(
             f"&client_id={self._client_id}"
             f"&client_secret={self._client_secret}"
             f"&scope=openapi"
-            f"&redirect_uri={redirect_uri}"
+            f"&redirect_uri={quote(redirect_uri, safe='')}"
             f"&state={state}"
         )
 
