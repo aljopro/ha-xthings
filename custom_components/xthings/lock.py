@@ -52,6 +52,7 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         self._unlocking: bool = False
         self._clear_locking_handle: Any = None
         self._clear_unlocking_handle: Any = None
+        self._command_in_flight: bool = False
 
     @property
     def is_locked(self) -> bool | None:
@@ -71,17 +72,21 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
         """Return True if the lock is in the process of unlocking."""
         return self._unlocking
 
-    def _clear_locking_flag(self) -> None:
-        """Clear the locking flag and update state."""
-        self._locking = False
-        self._clear_locking_handle = None
-        self.async_write_ha_state()
-
-    def _clear_unlocking_flag(self) -> None:
-        """Clear the unlocking flag and update state."""
-        self._unlocking = False
-        self._clear_unlocking_handle = None
-        self.async_write_ha_state()
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        # Clear in-progress flags when we receive fresh data after a command
+        if self._command_in_flight:
+            self._command_in_flight = False
+            self._locking = False
+            self._unlocking = False
+            # Cancel scheduled timeouts since coordinator update arrived
+            if self._clear_locking_handle:
+                self._clear_locking_handle.cancel()
+                self._clear_locking_handle = None
+            if self._clear_unlocking_handle:
+                self._clear_unlocking_handle.cancel()
+                self._clear_unlocking_handle = None
+        super()._handle_coordinator_update()
 
     async def async_lock(self, **kwargs: Any) -> None:
         """Lock the device."""
@@ -89,7 +94,8 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
 
         # Cancel any pending flag clear
         if self._clear_locking_handle:
-            self._clear_locking_handle()
+            self._clear_locking_handle.cancel()
+            self._clear_locking_handle = None
 
         self._locking = True
         self.async_write_ha_state()
@@ -99,22 +105,25 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
                 self._device_id, self._device_info.custom_data
             )
 
+            # Mark that a command is in flight so coordinator update clears flags
+            self._command_in_flight = True
+
             # Schedule a refresh after the deferred response period
-            refresh_delay = (deferred_seconds + 2) if deferred_seconds else 1
             if deferred_seconds:
                 await self.coordinator.async_request_refresh_after(deferred_seconds + 2)
             else:
                 await self.coordinator.async_request_refresh()
 
-            # Schedule flag clear after refresh
+            # Safety timeout: clear flag if coordinator update doesn't arrive
+            timeout = (deferred_seconds + 5) if deferred_seconds else 5
             self._clear_locking_handle = self.hass.loop.call_later(
-                refresh_delay + 1,
-                self._clear_locking_flag,
+                timeout,
+                self._timeout_clear_flags,
             )
         except Exception:
             _LOGGER.exception("Failed to lock %s", self._device_info.name)
-            # Clear locking flag on error
             self._locking = False
+            self._command_in_flight = False
             self.async_write_ha_state()
             raise
 
@@ -124,7 +133,8 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
 
         # Cancel any pending flag clear
         if self._clear_unlocking_handle:
-            self._clear_unlocking_handle()
+            self._clear_unlocking_handle.cancel()
+            self._clear_unlocking_handle = None
 
         self._unlocking = True
         self.async_write_ha_state()
@@ -134,21 +144,33 @@ class XthingsLockEntity(XthingsEntity, LockEntity):
                 self._device_id, self._device_info.custom_data
             )
 
+            # Mark that a command is in flight so coordinator update clears flags
+            self._command_in_flight = True
+
             # Schedule a refresh after the deferred response period
-            refresh_delay = (deferred_seconds + 2) if deferred_seconds else 1
             if deferred_seconds:
                 await self.coordinator.async_request_refresh_after(deferred_seconds + 2)
             else:
                 await self.coordinator.async_request_refresh()
 
-            # Schedule flag clear after refresh
+            # Safety timeout: clear flag if coordinator update doesn't arrive
+            timeout = (deferred_seconds + 5) if deferred_seconds else 5
             self._clear_unlocking_handle = self.hass.loop.call_later(
-                refresh_delay + 1,
-                self._clear_unlocking_flag,
+                timeout,
+                self._timeout_clear_flags,
             )
         except Exception:
             _LOGGER.exception("Failed to unlock %s", self._device_info.name)
-            # Clear unlocking flag on error
             self._unlocking = False
+            self._command_in_flight = False
             self.async_write_ha_state()
             raise
+
+    def _timeout_clear_flags(self) -> None:
+        """Safety timeout to clear in-progress flags."""
+        self._locking = False
+        self._unlocking = False
+        self._command_in_flight = False
+        self._clear_locking_handle = None
+        self._clear_unlocking_handle = None
+        self.async_write_ha_state()
