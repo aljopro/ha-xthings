@@ -27,9 +27,9 @@ A custom Home Assistant integration for **U-tec ULTRALOQ** WiFi smart locks via 
 
 ## Prerequisites
 
-1. A U-tec WiFi lock connected to the Xthings / ULTRALOQ app
-2. **OpenAPI activated** in the Xthings app (Settings → OpenAPI)
-3. Your **Client ID** and **Client Secret** from the OpenAPI settings
+1. A U-tec WiFi lock connected to the **Xthings** or **ULTRALOQ** app
+2. **OpenAPI activated** in the app (Settings → OpenAPI) — this generates your personal API credentials
+3. Your **Client ID**, **Client Secret**, and **Redirect URI** configured in the app
 
 ## Installation
 
@@ -48,26 +48,37 @@ A custom Home Assistant integration for **U-tec ULTRALOQ** WiFi smart locks via 
 
 ## Configuration
 
-### Step 1: Add Application Credentials
+Each user must generate their own API credentials from the Xthings / ULTRALOQ app. **Do not share your Client ID or Client Secret** — they are tied to your personal account and grant access to your locks.
 
-1. Go to **Settings → Devices & Services → Application Credentials**
-2. Click **Add Application Credentials**
-3. Select **Xthings (U-tec)**
-4. Enter your **Client ID** and **Client Secret** from the Xthings app
+### Step 1: Activate OpenAPI & Get Your Credentials
 
-### Step 2: Update Redirect URI
+1. Open the **Xthings** (or **ULTRALOQ**) app on your phone
+2. Go to **Settings → OpenAPI** and activate it (see [Xthings docs](https://developer.xthings.com/hc/en-us/articles/52426440634137) if on app version 3.5.5+)
+3. Note the **Client ID** and **Client Secret** shown — these are unique to your account
 
-In the Xthings / ULTRALOQ app, update the **Redirect URI** to match your Home Assistant instance:
+### Step 2: Set the Redirect URI
+
+Still in the app's OpenAPI settings, set the **Redirect URI** to match your Home Assistant instance:
 
 - **If using Nabu Casa:** `https://<your-id>.ui.nabu.casa/auth/external/callback`
 - **If using local access:** `http://<your-ha-ip>:8123/auth/external/callback`
 
-### Step 3: Add the Integration
+> **Tip:** You can find your exact redirect URL in Home Assistant at **Settings → Devices & Services → Application Credentials** — it's shown when you add credentials.
+
+### Step 3: Add Application Credentials in Home Assistant
+
+1. Go to **Settings → Devices & Services → Application Credentials**
+2. Click **Add Application Credentials**
+3. Select **Xthings (U-tec)**
+4. Enter **your** Client ID and Client Secret from Step 1
+
+### Step 4: Add the Integration
 
 1. Go to **Settings → Devices & Services → Add Integration**
 2. Search for **Xthings**
-3. Follow the OAuth2 authorization flow
-4. Your locks will be discovered automatically
+3. You'll be redirected to the Xthings OAuth2 login page — sign in with your U-tec account
+4. Authorize Home Assistant to access your devices
+5. Your locks will be discovered automatically
 
 ### Step 4 (Optional): Enable Push Notifications
 
