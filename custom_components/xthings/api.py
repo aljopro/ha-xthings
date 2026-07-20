@@ -116,10 +116,9 @@ class XthingsOAuth2Implementation(
         Resolve external data to tokens.
 
         Called after the user completes the OAuth flow. The external_data
-        contains the callback query parameters. Xthings uses 'authorization_code'
-        instead of the standard 'code' parameter.
+        contains the callback query parameters with a standard 'code' param.
+        Also accepts 'authorization_code' as a fallback.
         """
-        # Handle both standard 'code' and xthings 'authorization_code' params
         code = external_data.get("code") or external_data.get("authorization_code")
         if not code:
             raise ValueError("No authorization code received from xthings OAuth")
@@ -137,8 +136,10 @@ class XthingsOAuth2Implementation(
         url = (
             f"{OAUTH2_TOKEN_URL}"
             f"?grant_type=authorization_code"
+            f"&client_secret={self._client_secret}"
             f"&client_id={self._client_id}"
             f"&code={code}"
+            f"&redirect_uri={quote(self.redirect_uri, safe='')}"
         )
 
         _LOGGER.debug("Requesting token from xthings OAuth")
@@ -154,7 +155,11 @@ class XthingsOAuth2Implementation(
                 raise RuntimeError(f"Token request failed: {resp.status} {error_text}")
             token_data = await resp.json()
 
-        # Normalize token response to what HA expects
+        # Error responses use a wrapped shape: {"code":200,"data":{"error":"..."}}
+        if "data" in token_data and "error" in token_data.get("data", {}):
+            error_msg = token_data["data"]["error"]
+            raise RuntimeError(f"Token request error: {error_msg}")
+
         if "access_token" not in token_data:
             raise RuntimeError(f"Invalid token response: {token_data}")
 
@@ -205,6 +210,12 @@ class XthingsOAuth2Implementation(
                     f"Token refresh failed: {resp.status}"
                 )
             token_data = await resp.json()
+
+        if "data" in token_data and "error" in token_data.get("data", {}):
+            error_msg = token_data["data"]["error"]
+            raise config_entry_oauth2_flow.OAuth2AuthorizationError(
+                f"Token refresh error: {error_msg}"
+            )
 
         token_data.setdefault("token_type", "Bearer")
 

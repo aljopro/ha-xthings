@@ -46,7 +46,7 @@ CAP_LOCK_USER = "st.lockUser"
 CAP_DEFERRED_RESPONSE = "st.deferredResponse"
 CAP_DOOR_SENSOR = "st.DoorSensor"
 
-# Device categories
+# Device categories (matched case-insensitively via substring)
 CATEGORY_LOCK = "LOCK"
 
 # Handler types
