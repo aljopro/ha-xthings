@@ -137,8 +137,10 @@ class XthingsOAuth2Implementation(
         url = (
             f"{OAUTH2_TOKEN_URL}"
             f"?grant_type=authorization_code"
+            f"&client_secret={self._client_secret}"
             f"&client_id={self._client_id}"
             f"&code={code}"
+            f"&redirect_uri={quote(self.redirect_uri, safe='')}"
         )
 
         _LOGGER.debug("Requesting token from xthings OAuth")
