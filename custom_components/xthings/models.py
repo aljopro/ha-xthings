@@ -30,7 +30,7 @@ class XthingsDeviceInfo:
     def is_lock(self) -> bool:
         """Return True if this device is a lock."""
         return (
-            self.category.upper() == CATEGORY_LOCK
+            CATEGORY_LOCK in self.category.upper()
             or self.handle_type in SUPPORTED_LOCK_HANDLERS
         )
 
