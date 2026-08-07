@@ -47,7 +47,7 @@ CAP_DEFERRED_RESPONSE = "st.deferredResponse"
 CAP_DOOR_SENSOR = "st.DoorSensor"
 
 # Device categories
-CATEGORY_LOCK = "LOCK"
+CATEGORY_LOCK = "LOCK"  # matched case-insensitively via substring
 
 # Handler types
 HANDLER_LOCK = "utec-lock"

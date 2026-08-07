@@ -116,10 +116,9 @@ class XthingsOAuth2Implementation(
         Resolve external data to tokens.
 
         Called after the user completes the OAuth flow. The external_data
-        contains the callback query parameters. Xthings uses 'authorization_code'
-        instead of the standard 'code' parameter.
+        contains the callback query parameters with a standard 'code' param.
+        Also accepts 'authorization_code' as a fallback.
         """
-        # Handle both standard 'code' and xthings 'authorization_code' params
         code = external_data.get("code") or external_data.get("authorization_code")
         if not code:
             raise ValueError("No authorization code received from xthings OAuth")
@@ -137,8 +136,10 @@ class XthingsOAuth2Implementation(
         url = (
             f"{OAUTH2_TOKEN_URL}"
             f"?grant_type=authorization_code"
+            f"&client_secret={self._client_secret}"
             f"&client_id={self._client_id}"
             f"&code={code}"
+            f"&redirect_uri={quote(self.redirect_uri, safe='')}"
         )
 
         _LOGGER.debug("Requesting token from xthings OAuth")
@@ -154,7 +155,11 @@ class XthingsOAuth2Implementation(
                 raise RuntimeError(f"Token request failed: {resp.status} {error_text}")
             token_data = await resp.json()
 
-        # Normalize token response to what HA expects
+        # Error responses use a wrapped shape: {"code":200,"data":{"error":"..."}}
+        if "data" in token_data and "error" in token_data.get("data", {}):
+            error_msg = token_data["data"]["error"]
+            raise RuntimeError(f"Token request error: {error_msg}")
+
         if "access_token" not in token_data:
             raise RuntimeError(f"Invalid token response: {token_data}")
 
@@ -163,18 +168,44 @@ class XthingsOAuth2Implementation(
 
         return token_data
 
-    async def async_refresh_token(self, token: dict) -> dict:
-        """
-        Refresh the access token.
-
-        Uses the standard OAuth2 refresh_token grant, but via GET as
-        xthings appears to use GET for all token operations.
-        """
-        return await self._do_refresh_token(token)
-
     async def _async_refresh_token(self, token: dict) -> dict:
-        """Refresh the access token (HA 2026.3+ abstract method name)."""
+        """Refresh the access token.
+
+        This is the abstract method HA's AbstractOAuth2Implementation expects
+        overridden. Its public wrapper, async_refresh_token(), forces
+        expires_in to int and stamps expires_at from it -- do NOT also
+        override async_refresh_token() directly, or that normalization gets
+        bypassed and the stored token ends up missing expires_at entirely
+        (breaks .valid_token with KeyError('expires_at') on every subsequent
+        request, since xthings' refresh response doesn't include expires_at
+        itself, only expires_in).
+        """
         return await self._do_refresh_token(token)
+
+    def _raise_refresh_error(self, resp: Any, message: str) -> None:
+        """Raise a refresh-token error, using HA's reauth-aware exception when available.
+
+        OAuth2TokenRequestReauthError was added to Home Assistant core in
+        2026.3 (homeassistant/exceptions.py). This integration declares
+        support back to 2024.8.0 (see hacs.json), so we can't reference it
+        unconditionally -- doing so previously (as
+        config_entry_oauth2_flow.OAuth2AuthorizationError, which never
+        existed at all) crashed with AttributeError instead of triggering
+        HA's reauth flow. Guard with getattr and fall back to a plain
+        RuntimeError on older cores that don't have it yet.
+        """
+        reauth_error = getattr(
+            config_entry_oauth2_flow, "OAuth2TokenRequestReauthError", None
+        )
+        if reauth_error is not None:
+            raise reauth_error(
+                request_info=resp.request_info,
+                history=resp.history,
+                status=resp.status,
+                message=message,
+                domain=self._domain,
+            )
+        raise RuntimeError(message)
 
     async def _do_refresh_token(self, token: dict) -> dict:
         """Perform the actual token refresh."""
@@ -188,6 +219,7 @@ class XthingsOAuth2Implementation(
             f"{OAUTH2_TOKEN_URL}"
             f"?grant_type=refresh_token"
             f"&client_id={self._client_id}"
+            f"&client_secret={self._client_secret}"
             f"&refresh_token={refresh_token}"
         )
 
@@ -201,10 +233,25 @@ class XthingsOAuth2Implementation(
                     resp.status,
                     error_text,
                 )
-                raise config_entry_oauth2_flow.OAuth2AuthorizationError(
-                    f"Token refresh failed: {resp.status}"
+                self._raise_refresh_error(
+                    resp, f"Token refresh failed: {resp.status}"
                 )
             token_data = await resp.json()
+
+        # U-tec's refresh endpoint wraps BOTH success and error responses in
+        # {"code":200,"data":{...}} -- unlike the initial authorization_code
+        # exchange, which returns a flat shape. If left nested, access_token/
+        # expires_in silently vanish from the top level: HA persists whatever
+        # this function returns verbatim as the new stored token, so a raw
+        # wrapped dict corrupts token["access_token"]/["expires_at"] for every
+        # subsequent request until the next successful unwrap.
+        inner = token_data.get("data")
+        if isinstance(inner, dict):
+            if "error" in inner:
+                error_msg = inner["error"]
+                self._raise_refresh_error(resp, f"Token refresh error: {error_msg}")
+            if "access_token" in inner:
+                token_data = {**{k: v for k, v in token_data.items() if k != "data"}, **inner}
 
         token_data.setdefault("token_type", "Bearer")
 
